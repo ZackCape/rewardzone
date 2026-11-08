@@ -18,6 +18,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'rewardzone_jwt_secret_key_2026_sup
 const POSTBACK_SECRET = process.env.POSTBACK_SECRET || 'rewardzone_secret_key_2026';
 const ADMIN_KEY = process.env.ADMIN_KEY || 'rewardzone_admin_key_2026';
 
+// Standard RFC-compliant email regex
+const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -51,7 +54,7 @@ function authenticateToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = db.prepare('SELECT id, username, email, referral_code, referred_by, balance_coins, total_earned, is_admin, ip_address, created_at FROM users WHERE id = ?').get(decoded.id);
+    const user = db.prepare('SELECT id, username, email, referral_code, referred_by, balance_coins, total_earned, country_code, phone_number, total_watch_seconds, is_admin, ip_address, created_at FROM users WHERE id = ?').get(decoded.id);
 
     if (!user) {
       return res.status(401).json({ error: 'User account not found.' });
@@ -103,7 +106,7 @@ function authenticateAdmin(req, res, next) {
 // Register
 app.post('/api/auth/register', (req, res) => {
   try {
-    const { username, email, password, ref_code } = req.body;
+    const { username, email, password, ref_code, country_code, phone_number } = req.body;
 
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'Username, email, and password are required.' });
@@ -113,12 +116,20 @@ app.post('/api/auth/register', (req, res) => {
       return res.status(400).json({ error: 'Username must be between 3 and 20 characters.' });
     }
 
+    // Strict RFC email validation
+    if (!EMAIL_REGEX.test(email.trim())) {
+      return res.status(400).json({ error: 'Please enter a valid email address.' });
+    }
+
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
     }
 
+    const cleanCountryCode = (country_code || '+1').trim();
+    const cleanPhone = phone_number ? phone_number.trim() : null;
+
     // Check duplicate username or email
-    const existing = db.prepare('SELECT username, email FROM users WHERE username = ? OR email = ?').get(username, email);
+    const existing = db.prepare('SELECT username, email FROM users WHERE username = ? OR email = ?').get(username, email.trim());
     if (existing) {
       if (existing.username.toLowerCase() === username.toLowerCase()) {
         return res.status(409).json({ error: 'Username already in use.' });
@@ -146,9 +157,9 @@ app.post('/api/auth/register', (req, res) => {
     const clientIp = getClientIp(req);
 
     const result = db.prepare(`
-      INSERT INTO users (username, email, password_hash, referral_code, referred_by, balance_coins, total_earned, ip_address, is_admin)
-      VALUES (?, ?, ?, ?, ?, 100, 100, ?, 0)
-    `).run(username, email, passwordHash, referralCode, referredById, clientIp); // Bonus 100 coins welcome gift
+      INSERT INTO users (username, email, password_hash, referral_code, referred_by, balance_coins, total_earned, country_code, phone_number, total_watch_seconds, ip_address, is_admin)
+      VALUES (?, ?, ?, ?, ?, 100, 100, ?, ?, 0, ?, 0)
+    `).run(username, email.trim(), passwordHash, referralCode, referredById, cleanCountryCode, cleanPhone, clientIp); // Bonus 100 coins welcome gift
 
     const newUserId = result.lastInsertRowid;
 
@@ -171,13 +182,16 @@ app.post('/api/auth/register', (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    const userRecord = db.prepare('SELECT id, username, email, referral_code, referred_by, balance_coins, total_earned, is_admin FROM users WHERE id = ?').get(newUserId);
+    const userRecord = db.prepare('SELECT id, username, email, referral_code, referred_by, balance_coins, total_earned, country_code, phone_number, total_watch_seconds, is_admin FROM users WHERE id = ?').get(newUserId);
 
     return res.status(201).json({
       success: true,
       message: 'Account created successfully! Enjoy a 100 Coin welcome bonus.',
       token,
-      user: userRecord
+      user: {
+        ...userRecord,
+        total_watch_minutes: Math.floor((userRecord.total_watch_seconds || 0) / 60)
+      }
     });
   } catch (err) {
     console.error('[Register Error]', err);
@@ -194,9 +208,14 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(400).json({ error: 'Username/Email and password are required.' });
     }
 
+    // Strict email check if user attempts login with an email address format
+    if (usernameOrEmail.includes('@') && !EMAIL_REGEX.test(usernameOrEmail.trim())) {
+      return res.status(400).json({ error: 'Please enter a valid email address.' });
+    }
+
     const user = db.prepare(`
       SELECT * FROM users WHERE username = ? OR email = ?
-    `).get(usernameOrEmail, usernameOrEmail);
+    `).get(usernameOrEmail.trim(), usernameOrEmail.trim());
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials.' });
@@ -232,6 +251,10 @@ app.post('/api/auth/login', (req, res) => {
       referred_by: user.referred_by,
       balance_coins: user.balance_coins,
       total_earned: user.total_earned,
+      country_code: user.country_code,
+      phone_number: user.phone_number,
+      total_watch_seconds: user.total_watch_seconds || 0,
+      total_watch_minutes: Math.floor((user.total_watch_seconds || 0) / 60),
       is_admin: user.is_admin
     };
 
@@ -257,7 +280,7 @@ app.post('/api/auth/logout', (req, res) => {
 app.get('/api/auth/me', authenticateToken, (req, res) => {
   try {
     const userId = req.user.id;
-    const user = db.prepare('SELECT id, username, email, referral_code, referred_by, balance_coins, total_earned, is_admin, ip_address, created_at FROM users WHERE id = ?').get(userId);
+    const user = db.prepare('SELECT id, username, email, referral_code, referred_by, balance_coins, total_earned, country_code, phone_number, total_watch_seconds, is_admin, ip_address, created_at FROM users WHERE id = ?').get(userId);
 
     // Referral stats
     const refCount = db.prepare('SELECT COUNT(*) AS count FROM users WHERE referred_by = ?').get(userId).count;
@@ -274,6 +297,8 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
       success: true,
       user: {
         ...user,
+        total_watch_seconds: user.total_watch_seconds || 0,
+        total_watch_minutes: Math.floor((user.total_watch_seconds || 0) / 60),
         referrals_count: refCount,
         referral_earnings: refCommissions,
         completed_tasks_count: completedTasksCount
@@ -450,12 +475,12 @@ app.post('/api/tasks/claim-video', authenticateToken, (req, res) => {
         VALUES (?, 'video', ?, ?, ?)
       `).run(userId, task.id, externalTxId, task.reward_coins);
 
-      // 3. Update user balance
+      // 3. Update user balance & active watch time
       db.prepare(`
         UPDATE users 
-        SET balance_coins = balance_coins + ?, total_earned = total_earned + ?
+        SET balance_coins = balance_coins + ?, total_earned = total_earned + ?, total_watch_seconds = total_watch_seconds + ?
         WHERE id = ?
-      `).run(task.reward_coins, task.reward_coins, userId);
+      `).run(task.reward_coins, task.reward_coins, task.duration_seconds, userId);
 
       // 4. Tiered Referral Commission Engine (10% to referrer)
       const user = db.prepare('SELECT referred_by FROM users WHERE id = ?').get(userId);
@@ -480,11 +505,12 @@ app.post('/api/tasks/claim-video', authenticateToken, (req, res) => {
         }
       }
 
-      const updatedUser = db.prepare('SELECT balance_coins, total_earned FROM users WHERE id = ?').get(userId);
+      const updatedUser = db.prepare('SELECT balance_coins, total_earned, total_watch_seconds FROM users WHERE id = ?').get(userId);
       return {
         rewardCoins: task.reward_coins,
         newBalance: updatedUser.balance_coins,
         totalEarned: updatedUser.total_earned,
+        totalWatchSeconds: updatedUser.total_watch_seconds,
         referralCommissionCredited: referralCommission > 0
       };
     });
@@ -697,40 +723,192 @@ app.get('/api/postback/generate-test-url', authenticateToken, (req, res) => {
 });
 
 // ==========================================
-// 5. CRYPTO WITHDRAWALS SYSTEM
+// 5. CASHOUT & WITHDRAWALS SYSTEM
+// Supported Methods: Crypto, EcoCash, Visa Card
+// Strict Cashout Gates: 100,000 Coins ($100.00 USD) | 10 Referrals | 10 Hours Watch Time
 // ==========================================
 
-const VALID_NETWORKS = ['USDT-BEP20', 'USDT-TRC20', 'LTC', 'SOL'];
-const MIN_WITHDRAWAL_COINS = 5000; // 5000 coins = $5.00 USD
+const VALID_PAYOUT_METHODS = ['CRYPTO', 'ECOCASH', 'VISA'];
+const VALID_CRYPTO_NETWORKS = ['USDT-BEP20', 'USDT-TRC20', 'LTC', 'SOL'];
+const MIN_WITHDRAWAL_COINS = 100000; // 100,000 coins = $100.00 USD
+const MIN_REFERRALS_REQUIRED = 10;
+const MIN_WATCH_SECONDS_REQUIRED = 36000; // 10 hours = 600 minutes = 36,000 seconds
 
+// Check Cashout Eligibility & Gates
+app.get('/api/withdrawals/eligibility', authenticateToken, (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = db.prepare('SELECT balance_coins, total_watch_seconds FROM users WHERE id = ?').get(userId);
+    const refCount = db.prepare('SELECT COUNT(*) AS count FROM users WHERE referred_by = ?').get(userId).count;
+
+    const balanceCoins = user ? user.balance_coins : 0;
+    const watchSeconds = user ? (user.total_watch_seconds || 0) : 0;
+
+    const balanceMet = balanceCoins >= MIN_WITHDRAWAL_COINS;
+    const referralsMet = refCount >= MIN_REFERRALS_REQUIRED;
+    const watchTimeMet = watchSeconds >= MIN_WATCH_SECONDS_REQUIRED;
+    const eligible = balanceMet && referralsMet && watchTimeMet;
+
+    return res.json({
+      success: true,
+      eligible,
+      gates: {
+        balance: {
+          current: balanceCoins,
+          required: MIN_WITHDRAWAL_COINS,
+          met: balanceMet,
+          percent: Math.min(100, Math.round((balanceCoins / MIN_WITHDRAWAL_COINS) * 100)),
+          currentUsd: (balanceCoins / 1000).toFixed(2),
+          requiredUsd: (MIN_WITHDRAWAL_COINS / 1000).toFixed(2)
+        },
+        referrals: {
+          current: refCount,
+          required: MIN_REFERRALS_REQUIRED,
+          met: referralsMet,
+          percent: Math.min(100, Math.round((refCount / MIN_REFERRALS_REQUIRED) * 100))
+        },
+        watchTime: {
+          currentSeconds: watchSeconds,
+          currentMinutes: Math.floor(watchSeconds / 60),
+          currentHours: parseFloat((watchSeconds / 3600).toFixed(1)),
+          requiredSeconds: MIN_WATCH_SECONDS_REQUIRED,
+          requiredMinutes: 600,
+          requiredHours: 10,
+          met: watchTimeMet,
+          percent: Math.min(100, Math.round((watchSeconds / MIN_WATCH_SECONDS_REQUIRED) * 100))
+        }
+      }
+    });
+  } catch (err) {
+    console.error('[Eligibility Check Error]', err);
+    return res.status(500).json({ error: 'Failed to verify withdrawal eligibility.' });
+  }
+});
+
+// Submit Withdrawal Request
 app.post('/api/withdrawals/request', authenticateToken, (req, res) => {
   try {
     const userId = req.user.id;
-    const { amountCoins, cryptoNetwork, walletAddress } = req.body;
+    const {
+      amountCoins,
+      payoutMethod = 'CRYPTO',
+      cryptoNetwork,
+      walletAddress,
+      // EcoCash specific
+      ecocashNumber,
+      accountName,
+      // Visa specific
+      cardholderName,
+      cardNumber,
+      expiryDate,
+      billingCountry,
+      billingAddress
+    } = req.body;
 
+    const normalizedMethod = String(payoutMethod).toUpperCase();
+    if (!VALID_PAYOUT_METHODS.includes(normalizedMethod)) {
+      return res.status(400).json({
+        error: `Invalid payout method. Supported methods: ${VALID_PAYOUT_METHODS.join(', ')}`
+      });
+    }
+
+    const user = db.prepare('SELECT balance_coins, total_watch_seconds FROM users WHERE id = ?').get(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User account not found.' });
+    }
+
+    // STRICT CASHOUT GATE 1: Minimum Balance 100,000 Coins ($100.00 USD)
+    if (user.balance_coins < MIN_WITHDRAWAL_COINS) {
+      return res.status(403).json({
+        error: `Cashout Gate Locked: Minimum balance of ${MIN_WITHDRAWAL_COINS.toLocaleString()} Coins ($${(MIN_WITHDRAWAL_COINS / 1000).toFixed(2)} USD) required. Your current balance is ${user.balance_coins.toLocaleString()} Coins.`
+      });
+    }
+
+    // STRICT CASHOUT GATE 2: At least 10 Active Referrals
+    const refCount = db.prepare('SELECT COUNT(*) AS count FROM users WHERE referred_by = ?').get(userId).count;
+    if (refCount < MIN_REFERRALS_REQUIRED) {
+      return res.status(403).json({
+        error: `Cashout Gate Locked: You must invite at least ${MIN_REFERRALS_REQUIRED} active referrals to unlock cashouts. You currently have ${refCount} / ${MIN_REFERRALS_REQUIRED} referrals.`
+      });
+    }
+
+    // STRICT CASHOUT GATE 3: At least 10 Hours (600 Minutes / 36,000 Seconds) of Watch Time
+    const watchSeconds = user.total_watch_seconds || 0;
+    if (watchSeconds < MIN_WATCH_SECONDS_REQUIRED) {
+      const currentMins = Math.floor(watchSeconds / 60);
+      return res.status(403).json({
+        error: `Cashout Gate Locked: You must have at least 10 hours (600 minutes) of active ad watch time. You currently have ${currentMins} / 600 minutes logged.`
+      });
+    }
+
+    // Validate Requested Coin Amount
     const coins = parseInt(amountCoins, 10);
     if (isNaN(coins) || coins < MIN_WITHDRAWAL_COINS) {
       return res.status(400).json({
-        error: `Minimum withdrawal is ${MIN_WITHDRAWAL_COINS.toLocaleString()} Coins ($${(MIN_WITHDRAWAL_COINS / 1000).toFixed(2)} USD).`
+        error: `Minimum withdrawal amount is ${MIN_WITHDRAWAL_COINS.toLocaleString()} Coins ($${(MIN_WITHDRAWAL_COINS / 1000).toFixed(2)} USD).`
       });
     }
 
-    if (!cryptoNetwork || !VALID_NETWORKS.includes(cryptoNetwork)) {
-      return res.status(400).json({
-        error: `Invalid crypto network. Supported networks: ${VALID_NETWORKS.join(', ')}`
-      });
-    }
-
-    if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.trim().length < 10) {
-      return res.status(400).json({ error: 'Please provide a valid cryptocurrency wallet address.' });
-    }
-
-    // Check user balance
-    const user = db.prepare('SELECT balance_coins FROM users WHERE id = ?').get(userId);
-    if (!user || user.balance_coins < coins) {
+    if (user.balance_coins < coins) {
       return res.status(400).json({
         error: `Insufficient balance. You currently have ${user.balance_coins.toLocaleString()} Coins.`
       });
+    }
+
+    // Payout-Method Specific Validation & Payload Assembly
+    let destinationIdentifier = '';
+    let networkOrProvider = normalizedMethod;
+    let detailsPayload = {};
+
+    if (normalizedMethod === 'CRYPTO') {
+      if (!cryptoNetwork || !VALID_CRYPTO_NETWORKS.includes(cryptoNetwork)) {
+        return res.status(400).json({
+          error: `Invalid crypto network. Supported networks: ${VALID_CRYPTO_NETWORKS.join(', ')}`
+        });
+      }
+      if (!walletAddress || typeof walletAddress !== 'string' || walletAddress.trim().length < 10) {
+        return res.status(400).json({ error: 'Please provide a valid cryptocurrency wallet address.' });
+      }
+      destinationIdentifier = walletAddress.trim();
+      networkOrProvider = cryptoNetwork;
+      detailsPayload = { method: 'CRYPTO', network: cryptoNetwork, walletAddress: destinationIdentifier };
+
+    } else if (normalizedMethod === 'ECOCASH') {
+      const targetPhone = (ecocashNumber || walletAddress || '').trim();
+      if (!targetPhone || targetPhone.replace(/\D/g, '').length < 8) {
+        return res.status(400).json({ error: 'Please provide a valid registered EcoCash mobile number (e.g. +263 77X XXX XXX).' });
+      }
+      destinationIdentifier = targetPhone;
+      networkOrProvider = 'EcoCash';
+      detailsPayload = {
+        method: 'ECOCASH',
+        mobileNumber: targetPhone,
+        registeredName: (accountName || '').trim() || 'Account Holder'
+      };
+
+    } else if (normalizedMethod === 'VISA') {
+      const cleanCard = (cardNumber || walletAddress || '').replace(/\s+/g, '');
+      if (!cleanCard || cleanCard.length < 13 || cleanCard.length > 19 || !/^\d+$/.test(cleanCard)) {
+        return res.status(400).json({ error: 'Please provide a valid 16-digit Visa card number.' });
+      }
+      if (!cardholderName || cardholderName.trim().length < 2) {
+        return res.status(400).json({ error: 'Cardholder full name is required for Visa payouts.' });
+      }
+      if (!expiryDate || !/^\d{2}\/\d{2}$/.test(expiryDate.trim())) {
+        return res.status(400).json({ error: 'Valid card expiry date (MM/YY) is required.' });
+      }
+      const maskedCard = `VISA **** **** **** ${cleanCard.slice(-4)}`;
+      destinationIdentifier = maskedCard;
+      networkOrProvider = 'Visa Card';
+      detailsPayload = {
+        method: 'VISA',
+        cardholderName: cardholderName.trim(),
+        maskedCard,
+        cardNumberLast4: cleanCard.slice(-4),
+        expiryDate: expiryDate.trim(),
+        billingCountry: (billingCountry || '').trim(),
+        billingAddress: (billingAddress || '').trim()
+      };
     }
 
     const amountUsd = parseFloat((coins / 1000.0).toFixed(2));
@@ -741,9 +919,17 @@ app.post('/api/withdrawals/request', authenticateToken, (req, res) => {
 
       // 2. Insert into withdrawals table with pending status
       const insert = db.prepare(`
-        INSERT INTO withdrawals (user_id, amount_coins, amount_usd, crypto_network, wallet_address, status)
-        VALUES (?, ?, ?, ?, ?, 'pending')
-      `).run(userId, coins, amountUsd, cryptoNetwork, walletAddress.trim());
+        INSERT INTO withdrawals (user_id, amount_coins, amount_usd, payout_method, crypto_network, wallet_address, account_details, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+      `).run(
+        userId,
+        coins,
+        amountUsd,
+        normalizedMethod,
+        networkOrProvider,
+        destinationIdentifier,
+        JSON.stringify(detailsPayload)
+      );
 
       return insert.lastInsertRowid;
     });
@@ -752,8 +938,9 @@ app.post('/api/withdrawals/request', authenticateToken, (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: `Withdrawal request for $${amountUsd} USD submitted successfully! It will be reviewed by admin within 24 hours.`,
+      message: `Withdrawal request for $${amountUsd} USD via ${networkOrProvider} submitted successfully! It will be reviewed by admin within 24 hours.`,
       withdrawalId,
+      payoutMethod: normalizedMethod,
       newBalance: updatedUser.balance_coins
     });
   } catch (err) {
@@ -767,7 +954,7 @@ app.get('/api/withdrawals/my', authenticateToken, (req, res) => {
   try {
     const userId = req.user.id;
     const history = db.prepare(`
-      SELECT id, amount_coins, amount_usd, crypto_network, wallet_address, status, created_at
+      SELECT id, amount_coins, amount_usd, payout_method, crypto_network, wallet_address, account_details, status, created_at
       FROM withdrawals
       WHERE user_id = ?
       ORDER BY created_at DESC
@@ -868,8 +1055,8 @@ app.get('/api/admin/stats', authenticateAdmin, (req, res) => {
 app.get('/api/admin/withdrawals', authenticateAdmin, (req, res) => {
   try {
     const withdrawals = db.prepare(`
-      SELECT w.id, w.user_id, w.amount_coins, w.amount_usd, w.crypto_network, w.wallet_address, w.status, w.created_at,
-             u.username, u.email, u.ip_address, u.balance_coins as current_balance, u.total_earned, u.created_at as user_created_at
+      SELECT w.id, w.user_id, w.amount_coins, w.amount_usd, w.payout_method, w.crypto_network, w.wallet_address, w.account_details, w.status, w.created_at,
+             u.username, u.email, u.ip_address, u.country_code, u.phone_number, u.total_watch_seconds, u.balance_coins as current_balance, u.total_earned, u.created_at as user_created_at
       FROM withdrawals w
       JOIN users u ON w.user_id = u.id
       ORDER BY CASE WHEN w.status = 'pending' THEN 0 ELSE 1 END, w.created_at DESC
@@ -938,7 +1125,7 @@ app.post('/api/admin/withdrawals/:id/reject', authenticateAdmin, (req, res) => {
 app.get('/api/admin/users/:id/audit', authenticateAdmin, (req, res) => {
   try {
     const userId = req.params.id;
-    const user = db.prepare('SELECT id, username, email, referral_code, referred_by, balance_coins, total_earned, ip_address, created_at FROM users WHERE id = ?').get(userId);
+    const user = db.prepare('SELECT id, username, email, referral_code, referred_by, balance_coins, total_earned, country_code, phone_number, total_watch_seconds, ip_address, created_at FROM users WHERE id = ?').get(userId);
 
     if (!user) {
       return res.status(404).json({ error: 'User not found.' });
@@ -1039,7 +1226,7 @@ app.delete('/api/admin/videos/:id', authenticateAdmin, (req, res) => {
 app.get('/api/admin/users', authenticateAdmin, (req, res) => {
   try {
     const users = db.prepare(`
-      SELECT u.id, u.username, u.email, u.referral_code, u.referred_by, u.balance_coins, u.total_earned, u.ip_address, u.created_at,
+      SELECT u.id, u.username, u.email, u.referral_code, u.referred_by, u.balance_coins, u.total_earned, u.country_code, u.phone_number, u.total_watch_seconds, u.ip_address, u.created_at,
              ref.username as referrer_username,
              (SELECT COUNT(*) FROM users sub WHERE sub.referred_by = u.id) as total_referrals
       FROM users u

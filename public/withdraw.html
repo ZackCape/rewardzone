@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cashout & Withdraw | RewardZone</title>
+  <title>Cashout & Payouts | RewardZone</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/custom.css">
@@ -80,15 +80,87 @@
   <!-- ======================================================== -->
   <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
 
+    <!-- ======================================================== -->
+    <!-- 1. CASHOUT GATE CRITERIA & PROGRESS CARD                -->
+    <!-- ======================================================== -->
+    <section class="mono-card p-6 sm:p-7 space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800/80 pb-4">
+        <div>
+          <span class="text-[11px] font-mono text-zinc-500 uppercase tracking-wider block mb-0.5">Verification & Eligibility</span>
+          <h2 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+            Cashout Gate Rules
+            <span id="gate-overall-badge" class="px-2 py-0.5 text-[11px] font-mono rounded-md bg-zinc-800 text-zinc-400 border border-zinc-700">Checking Gates...</span>
+          </h2>
+          <p class="text-xs text-zinc-400 mt-0.5">To prevent sybil bots and maintain platform solvency, all three gates must be unlocked to withdraw.</p>
+        </div>
+        <div id="gate-alert-banner" class="text-xs py-1.5 px-3 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 font-mono">
+          Evaluating requirements...
+        </div>
+      </div>
+
+      <!-- 3 Criteria Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <!-- Gate 1: 100k Coins Balance -->
+        <div id="gate-box-balance" class="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 space-y-2.5">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-zinc-400 font-medium">1. Min. Balance ($100.00)</span>
+            <span id="gate-status-balance" class="font-mono text-[11px] text-zinc-500">0 / 100k</span>
+          </div>
+          <div class="w-full bg-zinc-950 rounded-full h-2 overflow-hidden border border-zinc-800">
+            <div id="gate-progress-balance" class="bg-white h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+            <span id="gate-balance-usd">$0.00 / $100.00</span>
+            <span id="gate-badge-balance" class="text-zinc-500 font-semibold">🔒 Locked</span>
+          </div>
+        </div>
+
+        <!-- Gate 2: 10 Active Referrals -->
+        <div id="gate-box-referrals" class="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 space-y-2.5">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-zinc-400 font-medium">2. Active Referrals (10)</span>
+            <span id="gate-status-referrals" class="font-mono text-[11px] text-zinc-500">0 / 10</span>
+          </div>
+          <div class="w-full bg-zinc-950 rounded-full h-2 overflow-hidden border border-zinc-800">
+            <div id="gate-progress-referrals" class="bg-white h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+            <span>Invite link recruits</span>
+            <span id="gate-badge-referrals" class="text-zinc-500 font-semibold">🔒 Locked</span>
+          </div>
+        </div>
+
+        <!-- Gate 3: 10 Hours Active Watch Time -->
+        <div id="gate-box-watch" class="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 space-y-2.5">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-zinc-400 font-medium">3. Ad Watch Time (10h)</span>
+            <span id="gate-status-watch" class="font-mono text-[11px] text-zinc-500">0 / 600m</span>
+          </div>
+          <div class="w-full bg-zinc-950 rounded-full h-2 overflow-hidden border border-zinc-800">
+            <div id="gate-progress-watch" class="bg-white h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+            <span id="gate-watch-hours">0.0 / 10.0 hrs</span>
+            <span id="gate-badge-watch" class="text-zinc-500 font-semibold">🔒 Locked</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- 2. CASHOUT REQUEST FORM & PAYOUT METHOD SELECTION       -->
+    <!-- ======================================================== -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       
-      <!-- Left 2 Cols: Form -->
+      <!-- Left 2 Cols: Dynamic Form -->
       <div class="lg:col-span-2 mono-card p-6 sm:p-8 space-y-6">
         <div class="flex items-start sm:items-center justify-between border-b border-zinc-800 pb-5">
           <div>
-            <span class="text-[11px] font-mono text-zinc-500 uppercase tracking-wider block mb-1">Direct Crypto Transfer</span>
+            <span class="text-[11px] font-mono text-zinc-500 uppercase tracking-wider block mb-1">Global & Regional Payouts</span>
             <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Request Cashout</h1>
-            <p class="text-xs text-zinc-400 mt-1">Withdraw funds to your private crypto wallet address.</p>
+            <p class="text-xs text-zinc-400 mt-1">Receive funds via Crypto, EcoCash Mobile Money, or direct Visa Card.</p>
           </div>
           <div class="text-right">
             <span class="text-[11px] text-zinc-500 uppercase block font-mono">Available</span>
@@ -97,137 +169,296 @@
           </div>
         </div>
 
-        <form id="cashout-form" onsubmit="handleCashout(event)" class="space-y-5">
+        <form id="cashout-form" onsubmit="handleCashout(event)" class="space-y-6">
           
-          <!-- Crypto Network -->
+          <!-- Payout Method Selector Tabs -->
           <div>
-            <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
-              1. Select Cryptocurrency Network
+            <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2.5">
+              1. Choose Payout Method
             </label>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div class="grid grid-cols-3 gap-2.5">
+              
+              <!-- Option 1: Crypto -->
               <label class="cursor-pointer">
-                <input type="radio" name="cryptoNetwork" value="USDT-BEP20" checked class="peer sr-only">
-                <div class="p-3 rounded-lg bg-zinc-900 border border-zinc-800 peer-checked:border-white peer-checked:bg-zinc-800 text-center transition-all">
-                  <span class="text-xs font-bold text-white block">USDT</span>
-                  <span class="text-[10px] text-zinc-400 font-mono block">BNB Smart Chain</span>
+                <input type="radio" name="payoutMethod" value="CRYPTO" checked onchange="switchPayoutMethod('CRYPTO')" class="peer sr-only">
+                <div class="p-3.5 rounded-xl bg-zinc-900 border border-zinc-800 peer-checked:border-white peer-checked:bg-zinc-800 text-center transition-all">
+                  <span class="text-xs font-bold text-white block">Cryptocurrency</span>
+                  <span class="text-[10px] text-zinc-400 font-mono block mt-0.5">USDT, LTC, SOL</span>
                 </div>
               </label>
 
+              <!-- Option 2: EcoCash -->
               <label class="cursor-pointer">
-                <input type="radio" name="cryptoNetwork" value="USDT-TRC20" class="peer sr-only">
-                <div class="p-3 rounded-lg bg-zinc-900 border border-zinc-800 peer-checked:border-white peer-checked:bg-zinc-800 text-center transition-all">
-                  <span class="text-xs font-bold text-white block">USDT</span>
-                  <span class="text-[10px] text-zinc-400 font-mono block">TRON (TRC20)</span>
+                <input type="radio" name="payoutMethod" value="ECOCASH" onchange="switchPayoutMethod('ECOCASH')" class="peer sr-only">
+                <div class="p-3.5 rounded-xl bg-zinc-900 border border-zinc-800 peer-checked:border-white peer-checked:bg-zinc-800 text-center transition-all">
+                  <span class="text-xs font-bold text-white block">EcoCash</span>
+                  <span class="text-[10px] text-zinc-400 font-mono block mt-0.5">Mobile Money</span>
                 </div>
               </label>
 
+              <!-- Option 3: Visa Card -->
               <label class="cursor-pointer">
-                <input type="radio" name="cryptoNetwork" value="LTC" class="peer sr-only">
-                <div class="p-3 rounded-lg bg-zinc-900 border border-zinc-800 peer-checked:border-white peer-checked:bg-zinc-800 text-center transition-all">
-                  <span class="text-xs font-bold text-white block">LTC</span>
-                  <span class="text-[10px] text-zinc-400 font-mono block">Litecoin Native</span>
+                <input type="radio" name="payoutMethod" value="VISA" onchange="switchPayoutMethod('VISA')" class="peer sr-only">
+                <div class="p-3.5 rounded-xl bg-zinc-900 border border-zinc-800 peer-checked:border-white peer-checked:bg-zinc-800 text-center transition-all">
+                  <span class="text-xs font-bold text-white block">Visa Card</span>
+                  <span class="text-[10px] text-zinc-400 font-mono block mt-0.5">Direct Card Payout</span>
                 </div>
               </label>
 
-              <label class="cursor-pointer">
-                <input type="radio" name="cryptoNetwork" value="SOL" class="peer sr-only">
-                <div class="p-3 rounded-lg bg-zinc-900 border border-zinc-800 peer-checked:border-white peer-checked:bg-zinc-800 text-center transition-all">
-                  <span class="text-xs font-bold text-white block">SOL</span>
-                  <span class="text-[10px] text-zinc-400 font-mono block">Solana Network</span>
-                </div>
-              </label>
             </div>
           </div>
 
-          <!-- Destination Address -->
-          <div>
-            <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2" for="wallet-address">
-              2. Destination Wallet Address
-            </label>
-            <input 
-              type="text" 
-              id="wallet-address" 
-              required 
-              placeholder="Paste your recipient address" 
-              class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white font-mono text-xs focus:outline-none focus:border-zinc-500 transition-colors"
-            >
+          <!-- Dynamic Method 1: Crypto Network & Wallet Address -->
+          <div id="method-fields-crypto" class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
+                2. Select Crypto Network
+              </label>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <label class="cursor-pointer">
+                  <input type="radio" name="cryptoNetwork" value="USDT-BEP20" checked class="peer sr-only">
+                  <div class="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800 peer-checked:border-white peer-checked:bg-zinc-800 text-center transition-all">
+                    <span class="text-xs font-bold text-white block">USDT</span>
+                    <span class="text-[10px] text-zinc-400 font-mono block">BNB Chain</span>
+                  </div>
+                </label>
+
+                <label class="cursor-pointer">
+                  <input type="radio" name="cryptoNetwork" value="USDT-TRC20" class="peer sr-only">
+                  <div class="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800 peer-checked:border-white peer-checked:bg-zinc-800 text-center transition-all">
+                    <span class="text-xs font-bold text-white block">USDT</span>
+                    <span class="text-[10px] text-zinc-400 font-mono block">TRON</span>
+                  </div>
+                </label>
+
+                <label class="cursor-pointer">
+                  <input type="radio" name="cryptoNetwork" value="LTC" class="peer sr-only">
+                  <div class="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800 peer-checked:border-white peer-checked:bg-zinc-800 text-center transition-all">
+                    <span class="text-xs font-bold text-white block">LTC</span>
+                    <span class="text-[10px] text-zinc-400 font-mono block">Litecoin</span>
+                  </div>
+                </label>
+
+                <label class="cursor-pointer">
+                  <input type="radio" name="cryptoNetwork" value="SOL" class="peer sr-only">
+                  <div class="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800 peer-checked:border-white peer-checked:bg-zinc-800 text-center transition-all">
+                    <span class="text-xs font-bold text-white block">SOL</span>
+                    <span class="text-[10px] text-zinc-400 font-mono block">Solana</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2" for="wallet-address">
+                Destination Crypto Address
+              </label>
+              <input 
+                type="text" 
+                id="wallet-address" 
+                placeholder="Paste your recipient wallet address" 
+                class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white font-mono text-xs focus:outline-none focus:border-zinc-500 transition-colors"
+              >
+            </div>
           </div>
 
-          <!-- Amount -->
+          <!-- Dynamic Method 2: EcoCash Mobile Money -->
+          <div id="method-fields-ecocash" class="hidden space-y-4">
+            <div class="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs text-zinc-400">
+              <span class="text-white font-semibold block mb-0.5">EcoCash Zimbabwe Instant Cashout</span>
+              Funds will be converted at official interbank equivalent and credited to your registered EcoCash mobile wallet.
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2" for="ecocash-number">
+                EcoCash Mobile Phone Number
+              </label>
+              <input 
+                type="tel" 
+                id="ecocash-number" 
+                placeholder="e.g. +263 77X XXX XXX or 077XXXXXXX" 
+                class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white font-mono text-xs focus:outline-none focus:border-zinc-500 transition-colors"
+              >
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2" for="ecocash-name">
+                Registered EcoCash Account Name
+              </label>
+              <input 
+                type="text" 
+                id="ecocash-name" 
+                placeholder="Full name as registered on EcoCash ID" 
+                class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs focus:outline-none focus:border-zinc-500 transition-colors"
+              >
+            </div>
+          </div>
+
+          <!-- Dynamic Method 3: Visa Card Payout -->
+          <div id="method-fields-visa" class="hidden space-y-4">
+            <div class="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs text-zinc-400">
+              <span class="text-white font-semibold block mb-0.5">Visa Direct Card Payout</span>
+              Funds are credited directly to your Visa debit/credit card balance within 12 - 24 hours.
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2" for="visa-name">
+                Cardholder Full Name
+              </label>
+              <input 
+                type="text" 
+                id="visa-name" 
+                placeholder="Name exactly as printed on card" 
+                class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs focus:outline-none focus:border-zinc-500 transition-colors"
+              >
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2" for="visa-number">
+                  16-Digit Visa Card Number
+                </label>
+                <input 
+                  type="text" 
+                  id="visa-number" 
+                  maxlength="19"
+                  placeholder="4000 1234 5678 9010" 
+                  class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white font-mono text-xs focus:outline-none focus:border-zinc-500 transition-colors"
+                >
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2" for="visa-expiry">
+                  Expiry (MM/YY)
+                </label>
+                <input 
+                  type="text" 
+                  id="visa-expiry" 
+                  maxlength="5"
+                  placeholder="12/28" 
+                  class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white font-mono text-xs focus:outline-none focus:border-zinc-500 transition-colors text-center"
+                >
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2" for="visa-country">
+                  Billing Country
+                </label>
+                <input 
+                  type="text" 
+                  id="visa-country" 
+                  placeholder="e.g. Zimbabwe / United States" 
+                  class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs focus:outline-none focus:border-zinc-500 transition-colors"
+                >
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2" for="visa-address">
+                  Billing Address
+                </label>
+                <input 
+                  type="text" 
+                  id="visa-address" 
+                  placeholder="e.g. 124 Samora Machel Ave" 
+                  class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs focus:outline-none focus:border-zinc-500 transition-colors"
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Amount Selection -->
           <div>
             <div class="flex items-center justify-between mb-2">
               <label class="text-xs font-semibold text-zinc-300 uppercase tracking-wider" for="withdraw-amount">
-                3. Withdrawal Amount (Coins)
+                Withdrawal Amount (Coins)
               </label>
-              <span class="text-xs text-zinc-500 font-mono">Min: 5,000 Coins ($5.00 USD)</span>
+              <span class="text-xs text-zinc-400 font-mono">Min Gate: 100,000 Coins ($100.00 USD)</span>
             </div>
 
             <div class="relative">
               <input 
                 type="number" 
                 id="withdraw-amount" 
-                min="5000" 
-                step="100" 
-                value="5000" 
+                min="100000" 
+                step="1000" 
+                value="100000" 
                 required 
                 oninput="updateUsdPreview()"
                 class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white font-mono text-sm font-bold focus:outline-none focus:border-zinc-500 transition-colors"
               >
               <div id="usd-preview" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono font-semibold text-zinc-400">
-                = $5.00 USD
+                = $100.00 USD
               </div>
             </div>
 
             <!-- Quick Presets -->
             <div class="flex items-center gap-2 mt-2">
-              <button type="button" onclick="setAmount(5000)" class="px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 border border-zinc-800">5,000 ($5)</button>
-              <button type="button" onclick="setAmount(10000)" class="px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 border border-zinc-800">10,000 ($10)</button>
-              <button type="button" onclick="setAmount(25000)" class="px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 border border-zinc-800">25,000 ($25)</button>
+              <button type="button" onclick="setAmount(100000)" class="px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 border border-zinc-800">100k ($100)</button>
+              <button type="button" onclick="setAmount(150000)" class="px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 border border-zinc-800">150k ($150)</button>
+              <button type="button" onclick="setAmount(200000)" class="px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 border border-zinc-800">200k ($200)</button>
               <button type="button" onclick="setMaxAmount()" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-xs font-mono text-white border border-zinc-700">MAX</button>
             </div>
           </div>
 
-          <button type="submit" id="withdraw-btn" class="btn-primary w-full py-2.5">
-            Submit Cashout Request
+          <!-- Submit Button -->
+          <button type="submit" id="withdraw-btn" class="btn-primary w-full py-3 flex items-center justify-center gap-2">
+            <span>Submit Cashout Request</span>
           </button>
         </form>
       </div>
 
-      <!-- Right 1 Col: Policy -->
+      <!-- Right 1 Col: Cashout Policies -->
       <div class="space-y-4">
-        <div class="mono-card p-6">
-          <h3 class="text-sm font-semibold text-white mb-3">Cashout Terms</h3>
-          <ul class="text-xs text-zinc-400 space-y-2.5 leading-relaxed">
-            <li class="flex items-start gap-2">
-              <span class="text-white">&bull;</span>
-              <span><strong>Fixed Rate:</strong> 1,000 Coins = $1.00 USD.</span>
+        <div class="mono-card p-6 space-y-3">
+          <h3 class="text-sm font-semibold text-white">Cashout Rules & Terms</h3>
+          <ul class="text-xs text-zinc-400 space-y-3 leading-relaxed">
+            <li class="flex items-start gap-2.5">
+              <span class="text-white font-bold">&bull;</span>
+              <span><strong>Fixed Valuation:</strong> 1,000 Coins = $1.00 USD at all times.</span>
             </li>
-            <li class="flex items-start gap-2">
-              <span class="text-white">&bull;</span>
-              <span><strong>Minimum:</strong> 5,000 Coins ($5.00 USD).</span>
+            <li class="flex items-start gap-2.5">
+              <span class="text-white font-bold">&bull;</span>
+              <span><strong>Gate 1 (Balance):</strong> Minimum 100,000 Coins ($100.00 USD).</span>
             </li>
-            <li class="flex items-start gap-2">
-              <span class="text-white">&bull;</span>
-              <span><strong>Turnaround:</strong> Reviewed and sent within 12 - 24 hours.</span>
+            <li class="flex items-start gap-2.5">
+              <span class="text-white font-bold">&bull;</span>
+              <span><strong>Gate 2 (Referrals):</strong> 10 active recruits who joined via your referral link.</span>
             </li>
-            <li class="flex items-start gap-2">
-              <span class="text-white">&bull;</span>
-              <span><strong>Network Gas:</strong> Zero deduction from your principal.</span>
+            <li class="flex items-start gap-2.5">
+              <span class="text-white font-bold">&bull;</span>
+              <span><strong>Gate 3 (Watch Time):</strong> 10 hours (600 active ad stream minutes) tracked.</span>
+            </li>
+            <li class="flex items-start gap-2.5">
+              <span class="text-white font-bold">&bull;</span>
+              <span><strong>Zero Fees:</strong> Full amount credited directly without network deduction.</span>
+            </li>
+            <li class="flex items-start gap-2.5">
+              <span class="text-white font-bold">&bull;</span>
+              <span><strong>Turnaround:</strong> Reviewed and dispatched within 12 - 24 hours.</span>
             </li>
           </ul>
         </div>
 
-        <div class="mono-card p-5 text-xs text-zinc-400">
-          <span class="text-white font-semibold block mb-1">Anti-Cheat Auditing</span>
-          Withdrawal requests automatically verify watch session elapsed times and IP footprints to guarantee platform security.
+        <div class="mono-card p-5 text-xs text-zinc-400 space-y-2">
+          <span class="text-white font-semibold block">Need More Referrals or Watch Time?</span>
+          <p>Share your invite link from the <a href="/referrals" class="text-white underline hover:text-zinc-200">Referrals Hub</a> and keep streaming videos in <a href="/watch" class="text-white underline hover:text-zinc-200">Watch & Earn</a> to unlock cashouts faster.</p>
         </div>
       </div>
 
     </div>
 
-    <!-- User Withdrawals History Table -->
+    <!-- ======================================================== -->
+    <!-- 3. USER WITHDRAWALS HISTORY TABLE                        -->
+    <!-- ======================================================== -->
     <section class="mono-card p-6">
-      <h3 class="text-base font-bold text-white mb-4">Your Cashout History</h3>
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-bold text-white">Your Cashout History</h3>
+        <button onclick="loadWithdrawals(); loadEligibility();" class="text-xs text-zinc-400 hover:text-white font-mono">
+          Refresh &or;
+        </button>
+      </div>
 
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs text-zinc-300">
@@ -235,8 +466,8 @@
             <tr>
               <th class="py-2.5 px-3">ID</th>
               <th class="py-2.5 px-3">Date</th>
-              <th class="py-2.5 px-3">Network</th>
-              <th class="py-2.5 px-3">Destination Address</th>
+              <th class="py-2.5 px-3">Method / Network</th>
+              <th class="py-2.5 px-3">Destination Details</th>
               <th class="py-2.5 px-3">Coins</th>
               <th class="py-2.5 px-3">USD</th>
               <th class="py-2.5 px-3 text-right">Status</th>
@@ -257,7 +488,7 @@
   <footer class="border-t border-zinc-900 py-6 text-xs text-zinc-500 mt-auto">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div>&copy; 2026 RewardZone. 1,000 Coins = $1.00 USD.</div>
-      <div class="text-zinc-500">Fast Crypto Payouts</div>
+      <div class="text-zinc-500">Crypto, EcoCash & Visa Payouts</div>
     </div>
   </footer>
 

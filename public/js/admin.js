@@ -140,6 +140,12 @@ async function loadAdminWithdrawals() {
         `;
       }
 
+      const shortAddr = (w.wallet_address && w.wallet_address.length > 12)
+        ? `${w.wallet_address.substring(0, 6)}...${w.wallet_address.substring(w.wallet_address.length - 4)}`
+        : (w.wallet_address || 'N/A');
+
+      const methodBadge = `<span class="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 font-mono text-[9px] text-zinc-400 mr-1 block">${w.payout_method || 'CRYPTO'}</span>`;
+
       return `
         <tr class="hover:bg-zinc-900/50">
           <td class="py-2.5 px-3 font-mono text-zinc-500">#${w.id}</td>
@@ -147,9 +153,12 @@ async function loadAdminWithdrawals() {
             <div class="font-semibold text-white">${w.username}</div>
             <div class="text-[10px] text-zinc-500 font-mono">${w.ip_address || '127.0.0.1'}</div>
           </td>
-          <td class="py-2.5 px-3 font-medium text-white">${w.crypto_network}</td>
-          <td class="py-2.5 px-3 font-mono text-zinc-400 select-all" title="${w.wallet_address}">
-            ${w.wallet_address.substring(0, 6)}...${w.wallet_address.substring(w.wallet_address.length - 4)}
+          <td class="py-2.5 px-3">
+            ${methodBadge}
+            <span class="font-medium text-white text-xs">${w.crypto_network}</span>
+          </td>
+          <td class="py-2.5 px-3 font-mono text-zinc-400 select-all" title="${w.wallet_address || ''}">
+            ${shortAddr}
           </td>
           <td class="py-2.5 px-3 font-mono text-white">${w.amount_coins.toLocaleString()}</td>
           <td class="py-2.5 px-3 font-mono font-bold text-white">$${w.amount_usd.toFixed(2)}</td>

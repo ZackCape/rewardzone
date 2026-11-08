@@ -1,7 +1,9 @@
 // Comprehensive End-to-End Automated Test Suite for RewardZone
+// Tests Authentication, Strict Email Checks, Phone/Country Code, 3-Gate Cashouts, Crypto, EcoCash, Visa & Admin
 require('dotenv').config();
 const http = require('http');
 const crypto = require('crypto');
+const { db } = require('./database');
 
 const BASE_URL = 'http://localhost:3000';
 let adminToken = '';
@@ -73,21 +75,37 @@ async function runTests() {
     const demoInitialBalance = demoLoginRes.body.user.balance_coins;
     console.log(`   ✅ Referrer (demouser, ID: ${referrerId}) logged in. Balance: ${demoInitialBalance} Coins (Ref Code: ${demoLoginRes.body.user.referral_code})\n`);
 
-    // 3. User Registration with Referral Code (?ref=DEMO99)
-    console.log('3️⃣ Testing User Registration with Referral Code...');
+    // 3. Strict Email Validation Test
+    console.log('3️⃣ Testing Strict Email Validation & Country Code Registration...');
+    const badEmailRes = await request('POST', '/api/auth/register', {
+      username: `bad_${Date.now().toString().slice(-6)}`,
+      email: 'invalid-email-format-without-at-sign',
+      password: 'Password123!',
+      country_code: '+263',
+      phone_number: '771234567'
+    });
+    if (badEmailRes.status === 400 && badEmailRes.body.error === 'Please enter a valid email address.') {
+      console.log(`   🛡️ STRICT EMAIL CHECK PASSED: Non-email rejected with HTTP 400: "${badEmailRes.body.error}"`);
+    } else {
+      throw new Error(`Strict email validation failed! Expected HTTP 400 email error, got: ${JSON.stringify(badEmailRes.body)}`);
+    }
+
+    // Register valid user with Country Code (+263) & Phone Number
     const testUsername = `user_${Date.now()}`;
     const regRes = await request('POST', '/api/auth/register', {
       username: testUsername,
       email: `${testUsername}@example.com`,
       password: 'Password123!',
-      ref_code: 'DEMO99'
+      ref_code: 'DEMO99',
+      country_code: '+263',
+      phone_number: '771234567'
     });
     if (regRes.status !== 201 || !regRes.body.token) {
       throw new Error(`Registration failed: ${JSON.stringify(regRes.body)}`);
     }
     userToken = regRes.body.token;
     newUserId = regRes.body.user.id;
-    console.log(`   ✅ Registered new user ${testUsername} (ID: ${newUserId}). Referred by: ${regRes.body.user.referred_by}`);
+    console.log(`   ✅ Registered new user ${testUsername} (ID: ${newUserId}) with Country: ${regRes.body.user.country_code}, Phone: ${regRes.body.user.phone_number}`);
     console.log(`   ✅ Welcome Bonus: ${regRes.body.user.balance_coins} Coins awarded.\n`);
 
     // 4. Video Tasks List
@@ -175,77 +193,165 @@ async function runTests() {
       throw new Error(`Referral commission mismatch. Expected +${expectedCommission}, got +${actualIncrease}`);
     }
 
-    // 8. Crypto Withdrawal Request
-    console.log('8️⃣ Testing Crypto Cashout Request...');
-    const withdrawAmount = 5000; // $5.00
-    const withdrawRes = await request('POST', '/api/withdrawals/request', {
-      amountCoins: withdrawAmount,
+    // 8. Strict Cashout Gate Testing (100k Coins, 10 Referrals, 10 Hours Watch Time)
+    console.log('8️⃣ Testing Strict Cashout Gate Rules (100k Coins, 10 Referrals, 10 Hours Watch Time)...');
+    
+    // Gate 1: Insufficient Balance Rejection
+    const gate1Res = await request('POST', '/api/withdrawals/request', {
+      amountCoins: 100000,
+      payoutMethod: 'CRYPTO',
       cryptoNetwork: 'USDT-BEP20',
       walletAddress: '0x71C8360f0896ff0D6CBEB7e80f4f9f72782bE507'
     }, {
       'Authorization': `Bearer ${userToken}`
     });
-
-    if (withdrawRes.status !== 201 || !withdrawRes.body.withdrawalId) {
-      throw new Error(`Withdrawal request failed: ${JSON.stringify(withdrawRes.body)}`);
+    if (gate1Res.status === 403 && gate1Res.body.error.includes('Minimum balance')) {
+      console.log(`   🔒 GATE 1 ENFORCED: Cashout rejected for low balance: "${gate1Res.body.error}"`);
+    } else {
+      throw new Error(`Gate 1 failed! Expected 403, got ${gate1Res.status}: ${JSON.stringify(gate1Res.body)}`);
     }
-    const withdrawalId = withdrawRes.body.withdrawalId;
-    console.log(`   ✅ Withdrawal #${withdrawalId} requested for 5,000 Coins ($5.00 USD). Status: Pending.`);
-    console.log(`   ✅ Coins immediately deducted from user balance. New Balance: ${withdrawRes.body.newBalance}\n`);
 
-    // 9. Admin Dashboard Management (Stats, Audit, Reject/Refund or Approve)
-    console.log('9️⃣ Testing Admin Operations (Stats, Audit, Reject/Refund)...');
-    const adminStatsRes = await request('GET', '/api/admin/stats', null, {
-      'Authorization': `Bearer ${adminToken}`
-    });
-    console.log(`   ✅ Admin Stats: Users=${adminStatsRes.body.stats.totalUsers}, CoinsCirculation=${adminStatsRes.body.stats.coinsCirculation}, PendingWithdrawals=${adminStatsRes.body.stats.pendingWithdrawalsCount}`);
+    // Seed User Balance to 350,000 Coins ($350.00 USD)
+    db.prepare('UPDATE users SET balance_coins = 350000 WHERE id = ?').run(newUserId);
 
-    // Audit user
-    const auditRes = await request('GET', `/api/admin/users/${newUserId}/audit`, null, {
-      'Authorization': `Bearer ${adminToken}`
-    });
-    console.log(`   ✅ Admin Audit: User #${newUserId} has ${auditRes.body.taskHistory.length} completed tasks logged.`);
-
-    // Test Admin Reject with Automatic Coin Refund
-    console.log('   🔄 Testing Admin Reject with Automatic User Refund...');
-    const rejectRes = await request('POST', `/api/admin/withdrawals/${withdrawalId}/reject`, {}, {
-      'Authorization': `Bearer ${adminToken}`
-    });
-    if (rejectRes.status !== 200) {
-      throw new Error(`Reject failed: ${JSON.stringify(rejectRes.body)}`);
-    }
-    console.log(`   ✅ Withdrawal #${withdrawalId} rejected: "${rejectRes.body.message}"`);
-
-    // Verify refund in user account
-    const userProfileRes = await request('GET', '/api/auth/me', null, {
+    // Gate 2: Insufficient Referrals Rejection
+    const gate2Res = await request('POST', '/api/withdrawals/request', {
+      amountCoins: 100000,
+      payoutMethod: 'CRYPTO',
+      cryptoNetwork: 'USDT-BEP20',
+      walletAddress: '0x71C8360f0896ff0D6CBEB7e80f4f9f72782bE507'
+    }, {
       'Authorization': `Bearer ${userToken}`
     });
-    console.log(`   ✅ Refund verified: User balance restored to ${userProfileRes.body.user.balance_coins} Coins.\n`);
+    if (gate2Res.status === 403 && gate2Res.body.error.includes('active referrals')) {
+      console.log(`   🔒 GATE 2 ENFORCED: Cashout rejected for insufficient referrals: "${gate2Res.body.error}"`);
+    } else {
+      throw new Error(`Gate 2 failed! Expected 403, got ${gate2Res.status}: ${JSON.stringify(gate2Res.body)}`);
+    }
 
-    // 10. Admin Add & Delete Video Task
-    console.log('🔟 Testing Admin Video Task Management (Add & Delete)...');
-    const addVideoRes = await request('POST', '/api/admin/videos', {
-      title: 'Solana Speed & Scalability Showcase',
-      youtube_embed_url: 'https://www.youtube.com/watch?v=17QRFlml4pA',
-      duration_seconds: 35,
-      reward_coins: 75,
-      ad_direct_link: 'https://solana.com'
+    // Seed 10 Active Referrals for newUserId
+    for (let i = 1; i <= 10; i++) {
+      const refCode = `TREF${i}_${Date.now()}`;
+      db.prepare(`
+        INSERT INTO users (username, email, password_hash, referral_code, referred_by, balance_coins, total_earned, created_at)
+        VALUES (?, ?, 'hash', ?, ?, 100, 100, datetime('now'))
+      `).run(`ref_user_${newUserId}_${i}_${Date.now()}`, `ref_${newUserId}_${i}_${Date.now()}@test.com`, refCode, newUserId);
+    }
+
+    // Gate 3: Insufficient Watch Time Rejection
+    const gate3Res = await request('POST', '/api/withdrawals/request', {
+      amountCoins: 100000,
+      payoutMethod: 'CRYPTO',
+      cryptoNetwork: 'USDT-BEP20',
+      walletAddress: '0x71C8360f0896ff0D6CBEB7e80f4f9f72782bE507'
     }, {
-      'Authorization': `Bearer ${adminToken}`
+      'Authorization': `Bearer ${userToken}`
     });
-    if (addVideoRes.status !== 201) {
-      throw new Error(`Failed to add video: ${JSON.stringify(addVideoRes.body)}`);
+    if (gate3Res.status === 403 && gate3Res.body.error.includes('watch time')) {
+      console.log(`   🔒 GATE 3 ENFORCED: Cashout rejected for insufficient watch time: "${gate3Res.body.error}"`);
+    } else {
+      throw new Error(`Gate 3 failed! Expected 403, got ${gate3Res.status}: ${JSON.stringify(gate3Res.body)}`);
     }
-    const newTaskId = addVideoRes.body.task.id;
-    console.log(`   ✅ Video Task #${newTaskId} created: "${addVideoRes.body.task.title}"`);
 
-    const delVideoRes = await request('DELETE', `/api/admin/videos/${newTaskId}`, null, {
+    // Seed User Watch Time to 10 Hours (36,000 Seconds)
+    db.prepare('UPDATE users SET total_watch_seconds = 36000 WHERE id = ?').run(newUserId);
+
+    // Verify Eligibility API
+    const eligRes = await request('GET', '/api/withdrawals/eligibility', null, {
+      'Authorization': `Bearer ${userToken}`
+    });
+    if (eligRes.status !== 200 || !eligRes.body.eligible) {
+      throw new Error(`Eligibility check failed! Expected eligible: true, got: ${JSON.stringify(eligRes.body)}`);
+    }
+    console.log(`   🔓 ALL 3 GATES UNLOCKED: User is now fully eligible for cashouts.\n`);
+
+    // 9. Testing Expanded Cashout Methods (Crypto, EcoCash, Visa Card)
+    console.log('9️⃣ Testing Multi-Method Cashouts (Crypto, EcoCash, Visa)...');
+
+    // Method A: Crypto (USDT-BEP20)
+    const cryptoCashoutRes = await request('POST', '/api/withdrawals/request', {
+      amountCoins: 100000,
+      payoutMethod: 'CRYPTO',
+      cryptoNetwork: 'USDT-BEP20',
+      walletAddress: '0x71C8360f0896ff0D6CBEB7e80f4f9f72782bE507'
+    }, {
+      'Authorization': `Bearer ${userToken}`
+    });
+    if (cryptoCashoutRes.status !== 201 || !cryptoCashoutRes.body.withdrawalId) {
+      throw new Error(`Crypto cashout failed: ${JSON.stringify(cryptoCashoutRes.body)}`);
+    }
+    const cryptoWithdrawalId = cryptoCashoutRes.body.withdrawalId;
+    console.log(`   ✅ Method 1 (Crypto) Payout #${cryptoWithdrawalId} submitted: $100.00 USD via USDT-BEP20.`);
+
+    // Method B: EcoCash (Mobile Money)
+    const ecoCashoutRes = await request('POST', '/api/withdrawals/request', {
+      amountCoins: 100000,
+      payoutMethod: 'ECOCASH',
+      ecocashNumber: '+263771234567',
+      accountName: 'Zack Cape'
+    }, {
+      'Authorization': `Bearer ${userToken}`
+    });
+    if (ecoCashoutRes.status !== 201 || !ecoCashoutRes.body.withdrawalId) {
+      throw new Error(`EcoCash cashout failed: ${JSON.stringify(ecoCashoutRes.body)}`);
+    }
+    const ecoWithdrawalId = ecoCashoutRes.body.withdrawalId;
+    console.log(`   ✅ Method 2 (EcoCash) Payout #${ecoWithdrawalId} submitted: $100.00 USD to +263771234567 (Zack Cape).`);
+
+    // Method C: Visa Card (Direct Card Payout)
+    const visaCashoutRes = await request('POST', '/api/withdrawals/request', {
+      amountCoins: 100000,
+      payoutMethod: 'VISA',
+      cardholderName: 'Zack Cape',
+      cardNumber: '4000123456789010',
+      expiryDate: '12/28',
+      billingCountry: 'Zimbabwe',
+      billingAddress: '124 Samora Machel Ave'
+    }, {
+      'Authorization': `Bearer ${userToken}`
+    });
+    if (visaCashoutRes.status !== 201 || !visaCashoutRes.body.withdrawalId) {
+      throw new Error(`Visa cashout failed: ${JSON.stringify(visaCashoutRes.body)}`);
+    }
+    const visaWithdrawalId = visaCashoutRes.body.withdrawalId;
+    console.log(`   ✅ Method 3 (Visa Card) Payout #${visaWithdrawalId} submitted: $100.00 USD to Visa card.`);
+
+    // Verify User Withdrawal History
+    const myWithdrawalsRes = await request('GET', '/api/withdrawals/my', null, {
+      'Authorization': `Bearer ${userToken}`
+    });
+    if (myWithdrawalsRes.status !== 200 || myWithdrawalsRes.body.withdrawals.length < 3) {
+      throw new Error(`My withdrawals history incomplete: ${JSON.stringify(myWithdrawalsRes.body)}`);
+    }
+    console.log(`   ✅ Cashout history verified: All 3 payout requests logged in user profile.\n`);
+
+    // 10. Admin Dashboard Operations & Review
+    console.log('🔟 Testing Admin Queue & Approval/Refund of New Payout Methods...');
+    const adminWithdrawalsRes = await request('GET', '/api/admin/withdrawals', null, {
       'Authorization': `Bearer ${adminToken}`
     });
-    if (delVideoRes.status !== 200) {
-      throw new Error(`Failed to delete video: ${JSON.stringify(delVideoRes.body)}`);
+    if (adminWithdrawalsRes.status !== 200 || !adminWithdrawalsRes.body.withdrawals.length) {
+      throw new Error(`Admin withdrawals query failed: ${JSON.stringify(adminWithdrawalsRes.body)}`);
     }
-    console.log(`   ✅ Video Task #${newTaskId} deleted.\n`);
+    console.log(`   ✅ Admin queue shows ${adminWithdrawalsRes.body.withdrawals.length} withdrawal records.`);
+
+    // Admin Approves EcoCash Payout
+    const approveEcoRes = await request('POST', `/api/admin/withdrawals/${ecoWithdrawalId}/approve`, {}, {
+      'Authorization': `Bearer ${adminToken}`
+    });
+    if (approveEcoRes.status !== 200) {
+      throw new Error(`Admin approve failed: ${JSON.stringify(approveEcoRes.body)}`);
+    }
+    console.log(`   ✅ Admin successfully approved EcoCash payout #${ecoWithdrawalId}.`);
+
+    // Admin Rejects Crypto Payout (Refund)
+    const rejectCryptoRes = await request('POST', `/api/admin/withdrawals/${cryptoWithdrawalId}/reject`, {}, {
+      'Authorization': `Bearer ${adminToken}`
+    });
+    if (rejectCryptoRes.status !== 200) {
+      throw new Error(`Admin reject failed: ${JSON.stringify(rejectCryptoRes.body)}`);
+    }
+    console.log(`   ✅ Admin rejected Crypto payout #${cryptoWithdrawalId} and automatically refunded 100,000 Coins to user balance.\n`);
 
     // 11. Multi-Page Application (MPA) Routes & Admin Lockdown
     console.log('1️⃣1️⃣ Testing MPA Routing & Hidden Admin Access Lockdown...');

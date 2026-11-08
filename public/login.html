@@ -95,6 +95,13 @@
       const submitBtn = document.getElementById('login-submit-btn');
 
       errorBox.classList.add('hidden');
+
+      if (identifier.includes('@') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
+        errorBox.textContent = 'Please enter a valid email address.';
+        errorBox.classList.remove('hidden');
+        return;
+      }
+
       submitBtn.disabled = true;
       submitBtn.textContent = 'Authenticating...';
 

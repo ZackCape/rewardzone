@@ -22,12 +22,31 @@ function initDatabase() {
       referred_by INTEGER,
       balance_coins INTEGER DEFAULT 0,
       total_earned INTEGER DEFAULT 0,
+      country_code TEXT DEFAULT '+1',
+      phone_number TEXT,
+      total_watch_seconds INTEGER DEFAULT 0,
       ip_address TEXT,
       is_admin INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (referred_by) REFERENCES users(id) ON DELETE SET NULL
     );
   `);
+
+  // Auto-migration for existing users table
+  try {
+    const userCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
+    if (!userCols.includes('country_code')) {
+      db.exec('ALTER TABLE users ADD COLUMN country_code TEXT DEFAULT "+1"');
+    }
+    if (!userCols.includes('phone_number')) {
+      db.exec('ALTER TABLE users ADD COLUMN phone_number TEXT');
+    }
+    if (!userCols.includes('total_watch_seconds')) {
+      db.exec('ALTER TABLE users ADD COLUMN total_watch_seconds INTEGER DEFAULT 0');
+    }
+  } catch (err) {
+    console.warn('[Database Migration Warning]', err.message);
+  }
 
   // 2. Video Tasks Table
   db.exec(`
@@ -72,20 +91,35 @@ function initDatabase() {
     );
   `);
 
-  // 5. Withdrawals Table
+  // 5. Withdrawals Table (Supports Crypto, EcoCash, Visa Card)
   db.exec(`
     CREATE TABLE IF NOT EXISTS withdrawals (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
       amount_coins INTEGER NOT NULL,
       amount_usd REAL NOT NULL,
-      crypto_network TEXT NOT NULL,
+      payout_method TEXT NOT NULL DEFAULT 'CRYPTO',
+      crypto_network TEXT,
       wallet_address TEXT NOT NULL,
+      account_details TEXT,
       status TEXT DEFAULT 'pending',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
+
+  // Auto-migration for existing withdrawals table
+  try {
+    const wCols = db.prepare('PRAGMA table_info(withdrawals)').all().map(c => c.name);
+    if (!wCols.includes('payout_method')) {
+      db.exec('ALTER TABLE withdrawals ADD COLUMN payout_method TEXT NOT NULL DEFAULT "CRYPTO"');
+    }
+    if (!wCols.includes('account_details')) {
+      db.exec('ALTER TABLE withdrawals ADD COLUMN account_details TEXT');
+    }
+  } catch (err) {
+    console.warn('[Database Migration Warning]', err.message);
+  }
 
   // Indices for rapid query performance
   db.exec(`
@@ -169,8 +203,8 @@ function seedData() {
   const adminExists = db.prepare('SELECT id FROM users WHERE is_admin = 1 LIMIT 1').get();
   if (!adminExists) {
     db.prepare(`
-      INSERT INTO users (username, email, password_hash, referral_code, balance_coins, total_earned, is_admin)
-      VALUES (?, ?, ?, ?, ?, ?, 1)
+      INSERT INTO users (username, email, password_hash, referral_code, balance_coins, total_earned, country_code, phone_number, is_admin)
+      VALUES (?, ?, ?, ?, ?, ?, '+1', '5550199', 1)
     `).run('admin', 'admin@rewardzone.local', hash, 'ADMIN1', 50000, 50000);
     console.log('[Database] Seeded secure administrator account.');
   } else {
@@ -187,8 +221,8 @@ function seedData() {
       const demoHash = bcrypt.hashSync('DemoUser123!', demoSalt);
       const adminUser = db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
       db.prepare(`
-        INSERT INTO users (username, email, password_hash, referral_code, referred_by, balance_coins, total_earned, is_admin)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+        INSERT INTO users (username, email, password_hash, referral_code, referred_by, balance_coins, total_earned, country_code, phone_number, is_admin)
+        VALUES (?, ?, ?, ?, ?, ?, ?, '+263', '771234567', 0)
       `).run('demouser', 'demo@rewardzone.local', demoHash, 'DEMO99', adminUser ? adminUser.id : null, 1500, 1500);
       console.log('[Database] Seeded dev demo user: demouser');
     }
