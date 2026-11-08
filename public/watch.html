@@ -132,8 +132,16 @@
           
           <!-- Video Frame Left 2 Cols -->
           <div class="lg:col-span-2 space-y-3">
-            <div class="video-responsive-container bg-black border border-zinc-800">
+            <div class="video-responsive-container bg-black border border-zinc-800 relative">
               <iframe id="modal-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+              <!-- Paused Overlay when User Leaves Tab -->
+              <div id="video-paused-overlay" class="hidden absolute inset-0 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center z-20">
+                <div class="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-700 flex items-center justify-center mb-2">
+                  <span class="text-white text-xs font-mono font-bold">⏸</span>
+                </div>
+                <span class="text-sm font-bold text-white mb-1">Stream Paused</span>
+                <p class="text-xs text-zinc-400 max-w-xs">Return focus to this browser tab to resume countdown & accumulate watch time.</p>
+              </div>
             </div>
 
             <div id="sponsor-link-box" class="hidden">
@@ -155,8 +163,9 @@
               </div>
 
               <!-- Timer Numbers -->
-              <div class="my-2">
+              <div class="my-2 flex items-center justify-center gap-2">
                 <span id="timer-display" class="font-mono-num font-black text-4xl sm:text-5xl text-white tracking-tight">00:30</span>
+                <span id="timer-paused-badge" class="hidden timer-paused-badge">PAUSED</span>
               </div>
 
               <!-- Progress bar -->

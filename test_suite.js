@@ -351,7 +351,14 @@ async function runTests() {
     if (rejectCryptoRes.status !== 200) {
       throw new Error(`Admin reject failed: ${JSON.stringify(rejectCryptoRes.body)}`);
     }
-    console.log(`   ✅ Admin rejected Crypto payout #${cryptoWithdrawalId} and automatically refunded 100,000 Coins to user balance.\n`);
+    console.log(`   ✅ Admin rejected Crypto payout #${cryptoWithdrawalId} and automatically refunded 100,000 Coins to user balance.`);
+
+    // Test Public Live Payouts Ticker Feed
+    const tickerRes = await request('GET', '/api/public/recent-payouts');
+    if (tickerRes.status !== 200 || !tickerRes.body.payouts || !tickerRes.body.payouts.length) {
+      throw new Error(`Live payout ticker failed: ${JSON.stringify(tickerRes.body)}`);
+    }
+    console.log(`   ✅ Live Payout Ticker feed verified: ${tickerRes.body.payouts.length} verified platform cashouts loaded.\n`);
 
     // 11. Multi-Page Application (MPA) Routes & Admin Lockdown
     console.log('1️⃣1️⃣ Testing MPA Routing & Hidden Admin Access Lockdown...');

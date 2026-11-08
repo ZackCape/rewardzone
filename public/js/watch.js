@@ -1,11 +1,12 @@
 // RewardZone Dedicated Watch & Earn Client Logic
+// Enhanced with Active Tab-Focus Anti-Cheat & Automatic Pause
 
 const watchState = {
   session: null,
   interval: null,
   secondsRemaining: 0,
   totalDuration: 0,
-  isTabActive: true
+  isPaused: false
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,26 +14,103 @@ document.addEventListener('DOMContentLoaded', () => {
   loadVideoTasks();
 });
 
-function setupFocusListeners() {
-  const updateState = () => {
-    const active = document.hasFocus() && document.visibilityState === 'visible';
-    watchState.isTabActive = active;
+// Helper: Determine if user is legitimately engaged with current browser tab
+function isUserTabActive() {
+  // If tab is hidden or minimized, user is definitely away
+  if (document.hidden || document.visibilityState !== 'visible') {
+    return false;
+  }
+  // If main document has focus or user is interacting with iframe inside this tab
+  if (document.hasFocus()) {
+    return true;
+  }
+  if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+    return true;
+  }
+  return false;
+}
 
-    const warning = document.getElementById('tab-warning');
-    if (warning) {
-      if (!active && watchState.session && watchState.secondsRemaining > 0) {
-        warning.classList.remove('hidden');
-      } else {
-        warning.classList.add('hidden');
-      }
+// Pause session immediately with prominent visual indicators
+function pauseWatchSession(message = 'Tab Inactive — Timer Paused! Stay focused on this window to earn.') {
+  if (watchState.isPaused) return;
+  watchState.isPaused = true;
+
+  const warning = document.getElementById('tab-warning');
+  if (warning) {
+    warning.textContent = message;
+    warning.classList.remove('hidden');
+  }
+
+  const timerEl = document.getElementById('timer-display');
+  if (timerEl) {
+    timerEl.classList.add('timer-paused');
+  }
+
+  const badge = document.getElementById('timer-paused-badge');
+  if (badge) {
+    badge.classList.remove('hidden');
+  }
+
+  const overlay = document.getElementById('video-paused-overlay');
+  if (overlay) {
+    overlay.classList.remove('hidden');
+  }
+
+  const claimBtn = document.getElementById('claim-btn');
+  if (claimBtn && watchState.secondsRemaining > 0) {
+    claimBtn.textContent = 'Stream Paused — Keep Tab Focused';
+  }
+}
+
+// Resume session and restore countdown visuals
+function resumeWatchSession() {
+  if (!watchState.isPaused) return;
+  watchState.isPaused = false;
+
+  const warning = document.getElementById('tab-warning');
+  if (warning) {
+    warning.classList.add('hidden');
+  }
+
+  const timerEl = document.getElementById('timer-display');
+  if (timerEl) {
+    timerEl.classList.remove('timer-paused');
+  }
+
+  const badge = document.getElementById('timer-paused-badge');
+  if (badge) {
+    badge.classList.add('hidden');
+  }
+
+  const overlay = document.getElementById('video-paused-overlay');
+  if (overlay) {
+    overlay.classList.add('hidden');
+  }
+
+  const claimBtn = document.getElementById('claim-btn');
+  if (claimBtn && watchState.secondsRemaining > 0) {
+    claimBtn.textContent = 'Complete Timer To Claim';
+  }
+}
+
+// Global window and tab focus listeners for instantaneous pause response
+function setupFocusListeners() {
+  const evaluateState = () => {
+    if (!watchState.session || watchState.secondsRemaining <= 0) return;
+
+    if (!isUserTabActive()) {
+      pauseWatchSession();
+    } else {
+      resumeWatchSession();
     }
   };
 
-  document.addEventListener('visibilitychange', updateState);
-  window.addEventListener('blur', updateState);
-  window.addEventListener('focus', updateState);
+  document.addEventListener('visibilitychange', evaluateState);
+  window.addEventListener('blur', evaluateState);
+  window.addEventListener('focus', evaluateState);
 }
 
+// Load Video Tasks Grid
 async function loadVideoTasks() {
   const container = document.getElementById('video-grid');
   if (!container) return;
@@ -64,7 +142,7 @@ async function loadVideoTasks() {
     }
 
     if (!data.tasks || data.tasks.length === 0) {
-      container.innerHTML = `<div class="col-span-full text-center text-xs text-zinc-500 py-8">No video tasks available right now.</div>`;
+      container.innerHTML = `<div class="col-span-full text-center text-xs text-zinc-500 py-8 font-mono">No video tasks available right now.</div>`;
       return;
     }
 
@@ -134,6 +212,7 @@ async function loadVideoTasks() {
   }
 }
 
+// Start Stream & Open Cinema Modal
 async function startStream(taskId) {
   const token = localStorage.getItem('rewardzone_token');
   if (!token) {
@@ -160,6 +239,7 @@ async function startStream(taskId) {
     watchState.session = data;
     watchState.totalDuration = data.durationSeconds;
     watchState.secondsRemaining = data.durationSeconds;
+    watchState.isPaused = false;
 
     document.getElementById('modal-title').textContent = data.title;
     document.getElementById('modal-reward').textContent = `+${data.rewardCoins} Coins ($${(data.rewardCoins / 1000).toFixed(2)})`;
@@ -183,6 +263,8 @@ async function startStream(taskId) {
     claimBtn.disabled = true;
     claimBtn.textContent = 'Complete Timer To Claim';
 
+    // Clear any previous pause visual states
+    resumeWatchSession();
     updateTimerDisplay();
     document.getElementById('watch-modal').classList.remove('hidden');
 
@@ -192,22 +274,24 @@ async function startStream(taskId) {
   }
 }
 
+// Anti-Cheat Countdown Engine (Active Tab Verification)
 function launchAntiCheatCountdown() {
   if (watchState.interval) clearInterval(watchState.interval);
 
   watchState.interval = setInterval(() => {
-    const hasFocus = document.hasFocus();
-    const isVisible = document.visibilityState === 'visible';
-    const isEligible = hasFocus && isVisible;
-
-    const warning = document.getElementById('tab-warning');
-    if (!isEligible) {
-      if (warning) warning.classList.remove('hidden');
-      return;
-    } else {
-      if (warning) warning.classList.add('hidden');
+    // 1. Strict Active-Tab Check
+    const active = isUserTabActive();
+    if (!active) {
+      pauseWatchSession();
+      return; // Strictly DO NOT decrement timer when inactive
     }
 
+    // 2. If user returned to tab, resume
+    if (watchState.isPaused) {
+      resumeWatchSession();
+    }
+
+    // 3. Decrement countdown tick
     if (watchState.secondsRemaining > 0) {
       watchState.secondsRemaining--;
       updateTimerDisplay();
@@ -217,7 +301,7 @@ function launchAntiCheatCountdown() {
         const claimBtn = document.getElementById('claim-btn');
         claimBtn.disabled = false;
         claimBtn.textContent = `Claim +${watchState.session.rewardCoins} Coins`;
-        showToast('Stream completed. Claim your reward!', 'success');
+        showToast('🎉 Stream completed! Click claim to receive your reward.', 'success');
       }
     }
   }, 1000);
@@ -236,6 +320,7 @@ function updateTimerDisplay() {
   if (bar) bar.style.width = `${percent}%`;
 }
 
+// Claim Video Reward
 async function handleClaimVideo() {
   if (!watchState.session) return;
 
@@ -273,10 +358,26 @@ async function handleClaimVideo() {
   }
 }
 
+// Close Cinema Modal & Clean Up State
 function closeWatchModal() {
   if (watchState.interval) clearInterval(watchState.interval);
   watchState.session = null;
+  watchState.isPaused = false;
+
+  const warning = document.getElementById('tab-warning');
+  if (warning) warning.classList.add('hidden');
+
+  const timerEl = document.getElementById('timer-display');
+  if (timerEl) timerEl.classList.remove('timer-paused');
+
+  const badge = document.getElementById('timer-paused-badge');
+  if (badge) badge.classList.add('hidden');
+
+  const overlay = document.getElementById('video-paused-overlay');
+  if (overlay) overlay.classList.add('hidden');
+
   const iframe = document.getElementById('modal-iframe');
   if (iframe) iframe.src = '';
+
   document.getElementById('watch-modal').classList.add('hidden');
 }

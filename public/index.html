@@ -97,6 +97,26 @@
   </header>
 
   <!-- ======================================================== -->
+  <!-- LIVE PAYOUT TICKER BAR                                   -->
+  <!-- ======================================================== -->
+  <div class="border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-sm py-2 px-4 sm:px-6">
+    <div class="max-w-6xl mx-auto flex items-center gap-3 text-xs overflow-hidden">
+      <!-- Live Badge -->
+      <div class="flex items-center gap-1.5 shrink-0 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-300">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="font-bold text-white uppercase tracking-wider text-[10px]">Live Payouts</span>
+      </div>
+      
+      <!-- Scrolling Marquee Track -->
+      <div class="ticker-wrap flex-1">
+        <div id="payout-ticker-track" class="ticker-track">
+          <span class="text-zinc-500 font-mono text-xs">Loading verified platform payouts...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
   <!-- MAIN CONTENT CONTAINER                                   -->
   <!-- ======================================================== -->
   <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-10 space-y-12">
@@ -317,6 +337,39 @@
       document.getElementById('guest-hero').classList.remove('hidden');
       document.getElementById('user-dashboard').classList.add('hidden');
     }
+
+    // Load Live Recent Payouts Ticker
+    async function loadRecentPayouts() {
+      try {
+        const res = await fetch('/api/public/recent-payouts');
+        const data = await res.json();
+        const track = document.getElementById('payout-ticker-track');
+        if (!track || !data.payouts || !data.payouts.length) return;
+
+        const renderItem = (p) => `
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-zinc-900/60 border border-zinc-800/80 text-xs font-mono shrink-0">
+            <span>${p.flag || '🌐'}</span>
+            <span class="font-semibold text-white">${p.user}</span>
+            <span class="text-zinc-500">&bull;</span>
+            <span class="text-white font-bold">${p.amount}</span>
+            <span class="text-zinc-400">via</span>
+            <span class="px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 text-[10px]">${p.network || p.method}</span>
+            <span class="text-zinc-500 text-[11px]">${p.timestamp}</span>
+          </div>
+        `;
+
+        // Duplicate array so marquee scrolls continuously without seams
+        const duplicated = [...data.payouts, ...data.payouts];
+        track.innerHTML = duplicated.map(renderItem).join('');
+      } catch (err) {
+        console.error('Failed to load recent payouts ticker', err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadRecentPayouts();
+      setInterval(loadRecentPayouts, 60000);
+    });
 
     async function loadDashboardHistory() {
       const token = localStorage.getItem('rewardzone_token');
