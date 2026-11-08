@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In | RewardZone</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/custom.css">
+</head>
+<body class="bg-black min-h-screen text-zinc-100 flex flex-col justify-between antialiased selection:bg-white selection:text-black">
+
+  <!-- Header -->
+  <header class="border-b border-zinc-900 bg-black/60 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black font-black text-sm tracking-tighter">
+          RZ
+        </div>
+        <span class="text-base font-bold tracking-tight text-white">REWARDZONE</span>
+      </a>
+      <a href="/register" class="text-xs text-zinc-400 hover:text-white transition-colors">
+        Create an account &rarr;
+      </a>
+    </div>
+  </header>
+
+  <!-- Login Form Container -->
+  <main class="flex-1 flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-sm mono-card p-6 sm:p-8">
+      
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-white tracking-tight">Sign in to RewardZone</h1>
+        <p class="text-xs text-zinc-400 mt-1">Enter your credentials to access your earnings portal</p>
+      </div>
+
+      <div id="login-error-alert" class="hidden mb-4 p-3 rounded-lg bg-red-950/40 border border-red-900/60 text-xs text-red-300">
+        <!-- Error text -->
+      </div>
+
+      <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-zinc-300 mb-1.5" for="login-identifier">
+            Username or Email
+          </label>
+          <input 
+            type="text" 
+            id="login-identifier" 
+            required 
+            autocomplete="username"
+            class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-sm focus:outline-none focus:border-zinc-500 transition-colors"
+          >
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-semibold text-zinc-300" for="login-password">
+              Password
+            </label>
+          </div>
+          <input 
+            type="password" 
+            id="login-password" 
+            required 
+            autocomplete="current-password"
+            class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-sm focus:outline-none focus:border-zinc-500 transition-colors"
+          >
+        </div>
+
+        <button type="submit" id="login-submit-btn" class="w-full btn-primary py-2.5 mt-2">
+          Sign In
+        </button>
+      </form>
+
+      <div class="mt-6 pt-5 border-t border-zinc-900 text-center text-xs text-zinc-500">
+        Don't have an account? 
+        <a href="/register" class="text-white hover:underline font-semibold ml-1">Create one</a>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-zinc-900 py-4 text-center text-xs text-zinc-600">
+    &copy; 2026 RewardZone. All rights reserved.
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script>
+    async function handleLogin(e) {
+      e.preventDefault();
+      const identifier = document.getElementById('login-identifier').value.trim();
+      const password = document.getElementById('login-password').value;
+      const errorBox = document.getElementById('login-error-alert');
+      const submitBtn = document.getElementById('login-submit-btn');
+
+      errorBox.classList.add('hidden');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Authenticating...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usernameOrEmail: identifier, password })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          errorBox.textContent = data.error || 'Invalid credentials.';
+          errorBox.classList.remove('hidden');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Sign In';
+          return;
+        }
+
+        // Store JWT token
+        localStorage.setItem('rewardzone_token', data.token);
+
+        // Check redirect query param
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get('redirect');
+
+        if (redirectUrl && redirectUrl.startsWith('/')) {
+          window.location.href = redirectUrl;
+        } else if (data.user && data.user.is_admin === 1) {
+          window.location.href = '/admin';
+        } else {
+          window.location.href = '/';
+        }
+
+      } catch (err) {
+        errorBox.textContent = 'Connection error. Please try again.';
+        errorBox.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign In';
+      }
+    }
+  </script>
+</body>
+</html>

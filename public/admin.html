@@ -3,167 +3,133 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RewardZone | Admin Command Center</title>
+  <title>Admin Console | RewardZone</title>
 
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              dark: '#090d16',
-              slate: '#0f172a',
-              emerald: '#10b981',
-              violet: '#8b5cf6',
-              cyan: '#06b6d4',
-              amber: '#f59e0b'
-            }
-          }
-        }
-      }
-    }
-  </script>
-
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="/css/custom.css">
 </head>
-<body class="bg-brand-dark min-h-screen text-slate-100 flex flex-col antialiased">
+<body class="bg-black min-h-screen text-zinc-100 flex flex-col antialiased selection:bg-white selection:text-black">
 
-  <!-- Admin Top Header -->
-  <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+  <!-- Admin Header -->
+  <header class="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-zinc-800">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       
-      <!-- Brand & Admin Badge -->
-      <div class="flex items-center gap-3">
-        <a href="/" class="flex items-center gap-2">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20">
-            <i class="fa-solid fa-shield-halved text-base font-bold"></i>
+      <div class="flex items-center gap-4">
+        <a href="/" class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-white font-mono font-bold text-xs">
+            ADM
           </div>
-          <div>
-            <span class="text-lg font-black tracking-tight text-white">REWARD<span class="text-amber-400">ZONE</span></span>
-            <span class="text-[10px] block font-mono-num tracking-wider text-amber-400 font-bold -mt-1">ADMIN CONSOLE</span>
-          </div>
+          <span class="text-base font-bold tracking-tight text-white">REWARDZONE</span>
         </a>
+        <span class="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-zinc-400">
+          Command Center
+        </span>
       </div>
 
-      <!-- Header Actions -->
       <div class="flex items-center gap-3">
-        <a href="/" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition-all">
-          <i class="fa-solid fa-arrow-left"></i> View User Site
+        <a href="/" class="btn-secondary text-xs py-1.5 px-3">
+          &larr; View Platform
         </a>
-        <button onclick="handleAdminLogout()" class="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-semibold border border-rose-500/30 flex items-center gap-1.5 transition-all">
-          <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+        <button onclick="handleAdminLogout()" class="px-3 py-1.5 rounded-md bg-zinc-900 hover:bg-zinc-800 text-xs text-zinc-400 hover:text-white border border-zinc-800 transition-colors">
+          Sign Out
         </button>
       </div>
 
     </div>
   </header>
 
-  <!-- Admin Navigation Tabs -->
-  <nav class="bg-slate-900/50 border-b border-slate-800/80 px-4">
-    <div class="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto py-2.5">
-      <button onclick="switchAdminTab('withdrawals')" id="admin-tab-btn-withdrawals" class="nav-tab active flex items-center gap-2 px-4 py-2 rounded-xl border border-transparent text-sm font-semibold text-slate-300 transition-all whitespace-nowrap">
-        <i class="fa-solid fa-money-bill-transfer text-emerald-400"></i> Withdrawals Queue
-        <span id="badge-pending-count" class="px-2 py-0.2 rounded-full bg-amber-500/20 text-amber-300 text-xs font-mono-num font-bold border border-amber-500/30">0</span>
+  <!-- Admin Sub Navigation -->
+  <nav class="bg-zinc-950 border-b border-zinc-900 px-4">
+    <div class="max-w-6xl mx-auto flex items-center gap-1 overflow-x-auto py-2">
+      <button onclick="switchAdminTab('withdrawals')" id="admin-tab-btn-withdrawals" class="nav-link active">
+        Withdrawals Queue (<span id="badge-pending-count">0</span>)
       </button>
-      <button onclick="switchAdminTab('videos')" id="admin-tab-btn-videos" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl border border-transparent text-sm font-semibold text-slate-300 transition-all whitespace-nowrap">
-        <i class="fa-solid fa-video text-violet-400"></i> Video Tasks Manager
+      <button onclick="switchAdminTab('videos')" id="admin-tab-btn-videos" class="nav-link">
+        Video Tasks
       </button>
-      <button onclick="switchAdminTab('users')" id="admin-tab-btn-users" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl border border-transparent text-sm font-semibold text-slate-300 transition-all whitespace-nowrap">
-        <i class="fa-solid fa-users text-cyan-400"></i> User Accounts
+      <button onclick="switchAdminTab('users')" id="admin-tab-btn-users" class="nav-link">
+        User Accounts
       </button>
-      <button onclick="switchAdminTab('postback')" id="admin-tab-btn-postback" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl border border-transparent text-sm font-semibold text-slate-300 transition-all whitespace-nowrap">
-        <i class="fa-solid fa-webhook text-amber-400"></i> S2S Postback Tester
+      <button onclick="switchAdminTab('postback')" id="admin-tab-btn-postback" class="nav-link">
+        S2S Webhook Tester
       </button>
     </div>
   </nav>
 
-  <!-- Main Container -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+  <!-- Main Admin Container -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
 
-    <!-- KPI Overview Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      
-      <div class="glass-card p-4 rounded-xl border border-slate-700/60">
-        <span class="text-xs font-semibold text-slate-400 block mb-1">Registered Users</span>
-        <div id="kpi-users" class="text-2xl font-black font-mono-num text-white">0</div>
-        <span class="text-[10px] text-slate-500 mt-1 block">Active accounts</span>
+    <!-- KPI Metric Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div class="mono-card p-4">
+        <span class="text-[11px] font-mono text-zinc-500 block mb-1">Users</span>
+        <div id="kpi-users" class="text-xl font-bold font-mono text-white">0</div>
+        <span class="text-[10px] text-zinc-500 mt-1 block">Registered</span>
       </div>
 
-      <div class="glass-card p-4 rounded-xl border border-slate-700/60">
-        <span class="text-xs font-semibold text-slate-400 block mb-1">Coins Circulation</span>
-        <div id="kpi-coins" class="text-2xl font-black font-mono-num text-emerald-400">0</div>
-        <span id="kpi-usd-circulation" class="text-[10px] text-slate-500 mt-1 block">~$0.00 USD</span>
+      <div class="mono-card p-4">
+        <span class="text-[11px] font-mono text-zinc-500 block mb-1">Coins Total</span>
+        <div id="kpi-coins" class="text-xl font-bold font-mono text-white">0</div>
+        <span id="kpi-usd-circulation" class="text-[10px] text-zinc-500 mt-1 block font-mono">~$0.00 USD</span>
       </div>
 
-      <div class="glass-card p-4 rounded-xl border border-slate-700/60">
-        <span class="text-xs font-semibold text-slate-400 block mb-1">Pending Cashouts</span>
-        <div id="kpi-pending-withdrawals" class="text-2xl font-black font-mono-num text-amber-400">0</div>
-        <span id="kpi-pending-usd" class="text-[10px] text-amber-400/80 mt-1 block font-mono-num">$0.00 awaiting review</span>
+      <div class="mono-card p-4">
+        <span class="text-[11px] font-mono text-zinc-500 block mb-1">Pending Cashouts</span>
+        <div id="kpi-pending-withdrawals" class="text-xl font-bold font-mono text-white">0</div>
+        <span id="kpi-pending-usd" class="text-[10px] text-zinc-400 mt-1 block font-mono">$0.00 queued</span>
       </div>
 
-      <div class="glass-card p-4 rounded-xl border border-slate-700/60">
-        <span class="text-xs font-semibold text-slate-400 block mb-1">Total Paid Out</span>
-        <div id="kpi-paid-out-usd" class="text-2xl font-black font-mono-num text-cyan-400">$0.00</div>
-        <span id="kpi-approved-count" class="text-[10px] text-slate-500 mt-1 block font-mono-num">0 requests paid</span>
+      <div class="mono-card p-4">
+        <span class="text-[11px] font-mono text-zinc-500 block mb-1">Total Paid</span>
+        <div id="kpi-paid-out-usd" class="text-xl font-bold font-mono text-white">$0.00</div>
+        <span id="kpi-approved-count" class="text-[10px] text-zinc-500 mt-1 block font-mono">0 approved</span>
       </div>
 
-      <div class="glass-card p-4 rounded-xl border border-slate-700/60">
-        <span class="text-xs font-semibold text-slate-400 block mb-1">Total Earned</span>
-        <div id="kpi-total-earned" class="text-2xl font-black font-mono-num text-violet-400">0</div>
-        <span class="text-[10px] text-slate-500 mt-1 block">All-time coins</span>
+      <div class="mono-card p-4">
+        <span class="text-[11px] font-mono text-zinc-500 block mb-1">All-Time Coins</span>
+        <div id="kpi-total-earned" class="text-xl font-bold font-mono text-white">0</div>
+        <span class="text-[10px] text-zinc-500 mt-1 block">Earned</span>
       </div>
 
-      <div class="glass-card p-4 rounded-xl border border-slate-700/60">
-        <span class="text-xs font-semibold text-slate-400 block mb-1">Tasks Completed</span>
-        <div id="kpi-tasks-completed" class="text-2xl font-black font-mono-num text-white">0</div>
-        <span class="text-[10px] text-slate-500 mt-1 block">Videos & offers</span>
+      <div class="mono-card p-4">
+        <span class="text-[11px] font-mono text-zinc-500 block mb-1">Tasks Logged</span>
+        <div id="kpi-tasks-completed" class="text-xl font-bold font-mono text-white">0</div>
+        <span class="text-[10px] text-zinc-500 mt-1 block">Streams & offers</span>
       </div>
-
     </div>
 
     <!-- ==================================================== -->
     <!-- TAB 1: WITHDRAWALS QUEUE                             -->
     <!-- ==================================================== -->
-    <section id="admin-sec-withdrawals" class="space-y-6">
-      <div class="glass-card rounded-2xl border border-slate-700/60 p-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <section id="admin-sec-withdrawals" class="space-y-4">
+      <div class="mono-card p-6">
+        <div class="flex items-center justify-between mb-4">
           <div>
-            <h2 class="text-xl font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-hand-holding-dollar text-emerald-400"></i> Crypto Withdrawal Requests
-            </h2>
-            <p class="text-xs text-slate-400 mt-0.5">Review member cashout requests, audit task history, approve payouts or reject with coin refund.</p>
+            <h2 class="text-lg font-bold text-white">Withdrawals Queue</h2>
+            <p class="text-xs text-zinc-400 mt-0.5">Review payout requests, audit user anti-cheat logs, approve or reject with automatic refund.</p>
           </div>
-          <button onclick="loadAdminWithdrawals()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 flex items-center gap-1.5 self-start">
-            <i class="fa-solid fa-rotate text-slate-400"></i> Refresh Queue
+          <button onclick="loadAdminWithdrawals()" class="btn-secondary text-xs py-1.5 px-3">
+            Refresh
           </button>
         </div>
 
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-slate-300">
-            <thead class="bg-slate-900/80 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800">
+          <table class="w-full text-left text-xs text-zinc-300">
+            <thead class="border-b border-zinc-800 text-zinc-500 uppercase font-mono">
               <tr>
-                <th class="px-4 py-3">ID</th>
-                <th class="px-4 py-3">User / IP Address</th>
-                <th class="px-4 py-3">Network</th>
-                <th class="px-4 py-3">Destination Wallet</th>
-                <th class="px-4 py-3">Amount Coins</th>
-                <th class="px-4 py-3">USD Value</th>
-                <th class="px-4 py-3">Date</th>
-                <th class="px-4 py-3">Status</th>
-                <th class="px-4 py-3 text-right">Actions</th>
+                <th class="py-2.5 px-3">ID</th>
+                <th class="py-2.5 px-3">User / IP</th>
+                <th class="py-2.5 px-3">Network</th>
+                <th class="py-2.5 px-3">Address</th>
+                <th class="py-2.5 px-3">Coins</th>
+                <th class="py-2.5 px-3">USD</th>
+                <th class="py-2.5 px-3">Date</th>
+                <th class="py-2.5 px-3">Status</th>
+                <th class="py-2.5 px-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody id="admin-withdrawals-tbody" class="divide-y divide-slate-800">
-              <tr>
-                <td colspan="9" class="px-4 py-8 text-center text-slate-500">
-                  Loading withdrawal queue...
-                </td>
-              </tr>
+            <tbody id="admin-withdrawals-tbody" class="divide-y divide-zinc-900">
+              <tr><td colspan="9" class="py-6 text-center text-zinc-600">Loading queue...</td></tr>
             </tbody>
           </table>
         </div>
@@ -173,76 +139,67 @@
     <!-- ==================================================== -->
     <!-- TAB 2: VIDEO TASKS MANAGER                           -->
     <!-- ==================================================== -->
-    <section id="admin-sec-videos" class="hidden space-y-8">
+    <section id="admin-sec-videos" class="hidden space-y-6">
       
-      <!-- Add New Video Form -->
-      <div class="glass-card rounded-2xl border border-slate-700/60 p-6">
-        <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
-          <i class="fa-solid fa-plus-circle text-violet-400"></i> Add New Video Stream Task
-        </h3>
-        <p class="text-xs text-slate-400 mb-6">Create new watch-to-earn video tasks. Videos automatically convert standard YouTube links to embed format.</p>
+      <!-- Add Video Form -->
+      <div class="mono-card p-6">
+        <h3 class="text-base font-bold text-white mb-1">Create New Video Task</h3>
+        <p class="text-xs text-zinc-400 mb-5">YouTube watch URLs are automatically converted to embed format.</p>
 
         <form id="add-video-form" onsubmit="handleAddVideoSubmit(event)" class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Video Stream Title</label>
-              <input type="text" id="video-title" required placeholder="e.g. Solana Ecosystem & DeFi Staking Guide" class="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-violet-500">
+              <label class="block text-xs font-semibold text-zinc-300 mb-1">Video Title</label>
+              <input type="text" id="video-title" required placeholder="e.g. Solana Ecosystem Explained" class="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs focus:outline-none focus:border-zinc-500">
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">YouTube URL / Embed URL</label>
-              <input type="text" id="video-url" required placeholder="https://www.youtube.com/watch?v=..." class="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-violet-500">
+              <label class="block text-xs font-semibold text-zinc-300 mb-1">YouTube URL</label>
+              <input type="text" id="video-url" required placeholder="https://www.youtube.com/watch?v=..." class="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs focus:outline-none focus:border-zinc-500">
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Duration (Seconds)</label>
-              <input type="number" id="video-duration" min="5" max="600" value="30" required class="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono-num text-sm focus:outline-none focus:border-violet-500">
+              <label class="block text-xs font-semibold text-zinc-300 mb-1">Duration (Seconds)</label>
+              <input type="number" id="video-duration" min="5" max="600" value="30" required class="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white font-mono text-xs focus:outline-none focus:border-zinc-500">
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Reward (Coins)</label>
-              <input type="number" id="video-reward" min="1" step="1" value="50" required class="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono-num text-sm focus:outline-none focus:border-violet-500">
+              <label class="block text-xs font-semibold text-zinc-300 mb-1">Reward (Coins)</label>
+              <input type="number" id="video-reward" min="1" step="1" value="50" required class="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white font-mono text-xs focus:outline-none focus:border-zinc-500">
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Sponsor Direct Link (Optional)</label>
-              <input type="url" id="video-adlink" placeholder="https://sponsor.com/deal" class="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-violet-500">
+              <label class="block text-xs font-semibold text-zinc-300 mb-1">Sponsor Direct Link (Optional)</label>
+              <input type="url" id="video-adlink" placeholder="https://sponsor.com/deal" class="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs focus:outline-none focus:border-zinc-500">
             </div>
           </div>
 
-          <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-emerald-600 hover:from-violet-500 hover:to-emerald-500 text-white font-bold text-sm shadow-lg shadow-violet-600/20 transition-all">
-            <i class="fa-solid fa-plus mr-1.5"></i> Publish Video Task
+          <button type="submit" class="btn-primary text-xs py-2 px-5">
+            Publish Video Stream Task
           </button>
         </form>
       </div>
 
-      <!-- Existing Video Tasks Table -->
-      <div class="glass-card rounded-2xl border border-slate-700/60 p-6">
-        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <i class="fa-solid fa-list text-slate-400"></i> Active Video Tasks
-        </h3>
+      <!-- Video Tasks List -->
+      <div class="mono-card p-6">
+        <h3 class="text-base font-bold text-white mb-4">Active Streams</h3>
 
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-slate-300">
-            <thead class="bg-slate-900/80 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800">
+          <table class="w-full text-left text-xs text-zinc-300">
+            <thead class="border-b border-zinc-800 text-zinc-500 uppercase font-mono">
               <tr>
-                <th class="px-4 py-3">ID</th>
-                <th class="px-4 py-3">Preview</th>
-                <th class="px-4 py-3">Title</th>
-                <th class="px-4 py-3">Duration</th>
-                <th class="px-4 py-3">Reward</th>
-                <th class="px-4 py-3">Sponsor Link</th>
-                <th class="px-4 py-3 text-right">Action</th>
+                <th class="py-2.5 px-3">ID</th>
+                <th class="py-2.5 px-3">Title</th>
+                <th class="py-2.5 px-3">Duration</th>
+                <th class="py-2.5 px-3">Reward</th>
+                <th class="py-2.5 px-3">Sponsor Link</th>
+                <th class="py-2.5 px-3 text-right">Action</th>
               </tr>
             </thead>
-            <tbody id="admin-videos-tbody" class="divide-y divide-slate-800">
-              <tr>
-                <td colspan="7" class="px-4 py-6 text-center text-slate-500">
-                  Loading video tasks...
-                </td>
-              </tr>
+            <tbody id="admin-videos-tbody" class="divide-y divide-zinc-900">
+              <tr><td colspan="6" class="py-6 text-center text-zinc-600">Loading videos...</td></tr>
             </tbody>
           </table>
         </div>
@@ -251,36 +208,30 @@
     </section>
 
     <!-- ==================================================== -->
-    <!-- TAB 3: USER ACCOUNTS                                 -->
+    <!-- TAB 3: USERS LIST                                    -->
     <!-- ==================================================== -->
-    <section id="admin-sec-users" class="hidden space-y-6">
-      <div class="glass-card rounded-2xl border border-slate-700/60 p-6">
-        <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-          <i class="fa-solid fa-users text-cyan-400"></i> Platform Registered Members
-        </h2>
+    <section id="admin-sec-users" class="hidden space-y-4">
+      <div class="mono-card p-6">
+        <h2 class="text-base font-bold text-white mb-4">Platform Registered Members</h2>
 
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-slate-300">
-            <thead class="bg-slate-900/80 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800">
+          <table class="w-full text-left text-xs text-zinc-300">
+            <thead class="border-b border-zinc-800 text-zinc-500 uppercase font-mono">
               <tr>
-                <th class="px-4 py-3">ID</th>
-                <th class="px-4 py-3">Username</th>
-                <th class="px-4 py-3">Email</th>
-                <th class="px-4 py-3">IP Address</th>
-                <th class="px-4 py-3">Referral Code</th>
-                <th class="px-4 py-3">Referred By</th>
-                <th class="px-4 py-3">Recruits</th>
-                <th class="px-4 py-3">Current Balance</th>
-                <th class="px-4 py-3">Total Earned</th>
-                <th class="px-4 py-3 text-right">Audit</th>
+                <th class="py-2.5 px-3">ID</th>
+                <th class="py-2.5 px-3">Username</th>
+                <th class="py-2.5 px-3">Email</th>
+                <th class="py-2.5 px-3">IP Address</th>
+                <th class="py-2.5 px-3">Referral Code</th>
+                <th class="py-2.5 px-3">Referred By</th>
+                <th class="py-2.5 px-3">Recruits</th>
+                <th class="py-2.5 px-3">Balance</th>
+                <th class="py-2.5 px-3">Total Earned</th>
+                <th class="py-2.5 px-3 text-right">Audit</th>
               </tr>
             </thead>
-            <tbody id="admin-users-tbody" class="divide-y divide-slate-800">
-              <tr>
-                <td colspan="10" class="px-4 py-6 text-center text-slate-500">
-                  Loading user records...
-                </td>
-              </tr>
+            <tbody id="admin-users-tbody" class="divide-y divide-zinc-900">
+              <tr><td colspan="10" class="py-6 text-center text-zinc-600">Loading user accounts...</td></tr>
             </tbody>
           </table>
         </div>
@@ -288,135 +239,89 @@
     </section>
 
     <!-- ==================================================== -->
-    <!-- TAB 4: S2S POSTBACK TESTER & DOCUMENTATION           -->
+    <!-- TAB 4: S2S POSTBACK TESTER                           -->
     <!-- ==================================================== -->
-    <section id="admin-sec-postback" class="hidden space-y-6">
-      <div class="glass-card rounded-2xl border border-slate-700/60 p-6 sm:p-8">
-        <div class="max-w-3xl">
-          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 mb-3">
-            <i class="fa-solid fa-bolt"></i> Developer & Affiliate Network Webhook
-          </div>
-          <h2 class="text-2xl font-bold text-white">Universal S2S Postback Integration</h2>
-          <p class="text-slate-300 text-sm mt-1 leading-relaxed">
-            Configure CPALead, TimeWall, Lootably, or custom ad networks to send Server-to-Server callbacks to your endpoint. Every postback automatically deduplicates transaction IDs and triggers a 10% commission to the user's inviter.
-          </p>
-        </div>
+    <section id="admin-sec-postback" class="hidden space-y-4">
+      <div class="mono-card p-6">
+        <h2 class="text-base font-bold text-white mb-1">Universal S2S Webhook Simulator</h2>
+        <p class="text-xs text-zinc-400 mb-6">Fire authenticated postbacks to test CPALead, TimeWall, and referral commission triggers.</p>
 
-        <div class="mt-6 p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-          <div class="text-xs font-bold text-slate-300 uppercase tracking-wider">Universal Postback Webhook URL:</div>
-          <code class="block p-3 rounded-lg bg-slate-950 border border-slate-800 text-emerald-400 font-mono-num text-xs break-all select-all">
-            http://YOUR_DOMAIN/api/postback?userid={subid}&payout={payout}&txid={tx_id}&sig={signature}
-          </code>
-        </div>
-
-        <!-- Interactive Postback Simulator -->
-        <div class="mt-8 p-6 rounded-2xl bg-slate-900/60 border border-slate-800">
-          <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
-            <i class="fa-solid fa-vial text-amber-400"></i> Live Postback Simulator
-          </h3>
-          <p class="text-xs text-slate-400 mb-4">Execute a test postback directly to verify database crediting and 10% referral commission logic.</p>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Target User ID</label>
-              <input type="number" id="test-postback-userid" value="2" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono-num text-sm">
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Payout Coins</label>
-              <input type="number" id="test-postback-payout" value="750" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono-num text-sm">
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Custom TxID</label>
-              <input type="text" id="test-postback-txid" placeholder="Auto-generated" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono-num text-sm">
-            </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label class="block text-xs font-semibold text-zinc-300 mb-1">Target User ID</label>
+            <input type="number" id="test-postback-userid" value="2" class="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white font-mono text-xs">
           </div>
 
-          <button onclick="triggerSimulatedPostback()" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wide transition-all">
-            <i class="fa-solid fa-play mr-1.5"></i> Fire Postback Webhook
-          </button>
+          <div>
+            <label class="block text-xs font-semibold text-zinc-300 mb-1">Payout (Coins)</label>
+            <input type="number" id="test-postback-payout" value="750" class="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white font-mono text-xs">
+          </div>
 
-          <div id="postback-test-result" class="hidden mt-4 p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono-num text-xs text-slate-300">
-            <!-- Output log -->
+          <div>
+            <label class="block text-xs font-semibold text-zinc-300 mb-1">Custom TxID (Optional)</label>
+            <input type="text" id="test-postback-txid" placeholder="Auto-generated" class="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white font-mono text-xs">
           </div>
         </div>
 
+        <button onclick="triggerSimulatedPostback()" class="btn-primary text-xs py-2 px-5">
+          Fire Postback Webhook
+        </button>
+
+        <div id="postback-test-result" class="hidden mt-4 p-3.5 rounded-lg bg-zinc-950 border border-zinc-800 font-mono text-xs text-zinc-300">
+        </div>
       </div>
     </section>
 
   </main>
 
-  <!-- ======================================================== -->
-  <!-- MODAL: USER AUDIT & TASK TRAIL INSPECTOR                 -->
-  <!-- ======================================================== -->
-  <div id="audit-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="w-full max-w-4xl rounded-2xl glass-card border border-slate-700 p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-      <button onclick="closeAuditModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
-        <i class="fa-solid fa-xmark text-lg"></i>
+  <!-- User Audit Modal -->
+  <div id="audit-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-3xl rounded-xl mono-card border border-zinc-800 p-6 relative max-h-[85vh] overflow-y-auto">
+      <button onclick="closeAuditModal()" class="absolute right-4 top-4 text-zinc-400 hover:text-white">
+        ✕
       </button>
 
-      <div class="flex items-center gap-3 mb-6 border-b border-slate-800 pb-4">
-        <div class="w-10 h-10 rounded-xl bg-cyan-600/20 text-cyan-400 flex items-center justify-center text-lg font-bold">
-          <i class="fa-solid fa-user-shield"></i>
-        </div>
-        <div>
-          <h3 class="text-xl font-bold text-white flex items-center gap-2">
-            User Anti-Cheat Audit: <span id="audit-username" class="text-emerald-400">demouser</span>
-          </h3>
-          <p class="text-xs text-slate-400 font-mono-num" id="audit-user-details">ID: 2 &bull; IP: 127.0.0.1</p>
-        </div>
+      <div class="mb-4 border-b border-zinc-800 pb-3">
+        <h3 class="text-base font-bold text-white">
+          Anti-Cheat Audit: <span id="audit-username" class="text-zinc-200">user</span>
+        </h3>
+        <p class="text-xs text-zinc-400 font-mono" id="audit-user-details">User ID: # &bull; IP: </p>
       </div>
 
-      <!-- Audit Completed Tasks Log -->
-      <h4 class="text-sm font-bold text-white mb-2 flex items-center gap-2">
-        <i class="fa-solid fa-clock-rotate-left text-violet-400"></i> Completed Task Log (Last 100 Entries)
-      </h4>
-      <div class="overflow-x-auto rounded-xl border border-slate-800 mb-6 bg-slate-950">
-        <table class="w-full text-left text-xs text-slate-300">
-          <thead class="bg-slate-900 text-slate-400 uppercase font-semibold">
+      <h4 class="text-xs font-mono uppercase text-zinc-400 mb-2">Completed Tasks Trail</h4>
+      <div class="overflow-x-auto rounded-lg border border-zinc-800 mb-6 bg-zinc-950">
+        <table class="w-full text-left text-xs text-zinc-300">
+          <thead class="bg-zinc-900 text-zinc-500 uppercase font-mono">
             <tr>
-              <th class="px-3 py-2">ID</th>
-              <th class="px-3 py-2">Type</th>
-              <th class="px-3 py-2">Details</th>
-              <th class="px-3 py-2">Coins</th>
-              <th class="px-3 py-2">TxID</th>
-              <th class="px-3 py-2">Timestamp</th>
+              <th class="py-2 px-3">ID</th>
+              <th class="py-2 px-3">Type</th>
+              <th class="py-2 px-3">Details</th>
+              <th class="py-2 px-3">Coins</th>
+              <th class="py-2 px-3">Timestamp</th>
             </tr>
           </thead>
-          <tbody id="audit-tasks-tbody" class="divide-y divide-slate-800">
-            <!-- Dynamic entries -->
-          </tbody>
+          <tbody id="audit-tasks-tbody" class="divide-y divide-zinc-900"></tbody>
         </table>
       </div>
 
-      <!-- Anti-Cheat Video Sessions Log -->
-      <h4 class="text-sm font-bold text-white mb-2 flex items-center gap-2">
-        <i class="fa-solid fa-video text-emerald-400"></i> Video Sessions Anti-Cheat Verifications
-      </h4>
-      <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
-        <table class="w-full text-left text-xs text-slate-300">
-          <thead class="bg-slate-900 text-slate-400 uppercase font-semibold">
+      <h4 class="text-xs font-mono uppercase text-zinc-400 mb-2">Video Session Elapsed Checks</h4>
+      <div class="overflow-x-auto rounded-lg border border-zinc-800 bg-zinc-950">
+        <table class="w-full text-left text-xs text-zinc-300">
+          <thead class="bg-zinc-900 text-zinc-500 uppercase font-mono">
             <tr>
-              <th class="px-3 py-2">Task</th>
-              <th class="px-3 py-2">Required Duration</th>
-              <th class="px-3 py-2">Server Start Time</th>
-              <th class="px-3 py-2">Completed</th>
+              <th class="py-2 px-3">Task</th>
+              <th class="py-2 px-3">Required</th>
+              <th class="py-2 px-3">Start Timestamp</th>
+              <th class="py-2 px-3">Verification</th>
             </tr>
           </thead>
-          <tbody id="audit-sessions-tbody" class="divide-y divide-slate-800">
-            <!-- Dynamic entries -->
-          </tbody>
+          <tbody id="audit-sessions-tbody" class="divide-y divide-zinc-900"></tbody>
         </table>
       </div>
-
     </div>
   </div>
 
-  <!-- Toast Notification Container -->
-  <div id="toast-container"></div>
-
-  <!-- Admin Application Logic -->
+  <script src="/js/common.js"></script>
   <script src="/js/admin.js"></script>
 </body>
 </html>

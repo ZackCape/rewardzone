@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Watch & Earn | RewardZone</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/custom.css">
+</head>
+<body class="bg-black min-h-screen text-zinc-100 flex flex-col antialiased selection:bg-white selection:text-black">
+
+  <!-- ======================================================== -->
+  <!-- NAVIGATION HEADER                                        -->
+  <!-- ======================================================== -->
+  <header class="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-zinc-800/80">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      
+      <!-- Brand & Navigation -->
+      <div class="flex items-center gap-8">
+        <a href="/" class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black font-black text-sm tracking-tighter">
+            RZ
+          </div>
+          <span class="text-base font-bold tracking-tight text-white">REWARDZONE</span>
+        </a>
+
+        <nav class="hidden md:flex items-center gap-1">
+          <a href="/" class="nav-link">Overview</a>
+          <a href="/watch" class="nav-link active">Watch & Earn</a>
+          <a href="/tasks" class="nav-link">Tasks & Daily</a>
+          <a href="/referrals" class="nav-link">Referrals</a>
+          <a href="/withdraw" class="nav-link">Cashout</a>
+        </nav>
+      </div>
+
+      <!-- User Stats / Authentication Actions -->
+      <div class="flex items-center gap-3">
+        <div id="header-user-menu" class="hidden items-center gap-3">
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
+            <span class="text-xs text-zinc-400">Balance:</span>
+            <span id="header-coins-balance" class="font-mono-num font-semibold text-sm text-white">0</span>
+            <span class="text-xs text-zinc-500">Coins</span>
+            <span class="text-xs text-zinc-600">&bull;</span>
+            <span id="header-usd-balance" class="font-mono-num font-semibold text-xs text-zinc-300">$0.00</span>
+          </div>
+
+          <div class="flex items-center gap-2 pl-1">
+            <span id="header-username" class="text-xs font-medium text-zinc-300 hidden sm:inline">user</span>
+            <button onclick="handleLogout()" class="px-2.5 py-1.5 rounded-md bg-zinc-900 hover:bg-zinc-800 text-xs text-zinc-400 hover:text-white border border-zinc-800 transition-colors">
+              Sign Out
+            </button>
+          </div>
+        </div>
+
+        <div id="header-guest-buttons" class="flex items-center gap-2.5">
+          <a href="/login" class="text-xs font-semibold text-zinc-400 hover:text-white px-3 py-1.5 transition-colors">
+            Sign In
+          </a>
+          <a href="/register" class="btn-primary text-xs py-1.5 px-3.5">
+            Get Started
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Mobile Nav Bar -->
+    <div class="md:hidden border-t border-zinc-900 px-4 py-2 flex items-center justify-between gap-1 overflow-x-auto text-xs">
+      <a href="/" class="nav-link py-1 px-2.5">Overview</a>
+      <a href="/watch" class="nav-link active py-1 px-2.5">Watch</a>
+      <a href="/tasks" class="nav-link py-1 px-2.5">Tasks</a>
+      <a href="/referrals" class="nav-link py-1 px-2.5">Referrals</a>
+      <a href="/withdraw" class="nav-link py-1 px-2.5">Cashout</a>
+    </div>
+  </header>
+
+  <!-- ======================================================== -->
+  <!-- MAIN CONTENT CONTAINER                                   -->
+  <!-- ======================================================== -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
+
+    <!-- Page Header & Instructions -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-white tracking-tight">Watch Streams & Earn</h1>
+        <p class="text-xs text-zinc-400 mt-1">
+          Complete the active-tab timer for each stream. Tasks refresh every 24 hours.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button onclick="loadVideoTasks()" class="btn-secondary text-xs py-1.5 px-3">
+          Refresh List
+        </button>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- A-ADS TOP BANNER (728x90) SLOT                           -->
+    <!-- ======================================================== -->
+    <div id="ad-banner-top" class="w-full rounded-lg overflow-hidden flex items-center justify-center p-2 bg-zinc-950/80 border border-zinc-900">
+      <!-- [PASTE YOUR A-ADS IFRAME HERE] -->
+      <iframe data-aa='[PASTE_YOUR_A_ADS_UNIT_ID_HERE]' src='https://acceptable.a-ads.com/[PASTE_YOUR_A_ADS_UNIT_ID_HERE]' style='border:0px; padding:0; width:100%; max-width:728px; height:90px; overflow:hidden; background-color: transparent;' loading='lazy'></iframe>
+    </div>
+
+    <!-- Video Streams Grid -->
+    <div id="video-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="mono-card p-6 text-center text-xs text-zinc-600 col-span-full">
+        Loading available video tasks...
+      </div>
+    </div>
+
+    <!-- Cinema Watch Modal -->
+    <div id="watch-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+      <div class="relative w-full max-w-5xl rounded-xl mono-card border border-zinc-800 p-4 sm:p-6 my-auto shadow-2xl">
+        
+        <!-- Modal Top Bar -->
+        <div class="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4">
+          <div>
+            <span class="text-[11px] font-mono uppercase tracking-wider text-zinc-400">Active Viewing Session</span>
+            <h3 id="modal-title" class="text-base sm:text-lg font-bold text-white truncate max-w-md sm:max-w-xl">
+              Video Title
+            </h3>
+          </div>
+          <button onclick="closeWatchModal()" class="w-8 h-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center text-sm transition-colors">
+            ✕
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          
+          <!-- Video Frame Left 2 Cols -->
+          <div class="lg:col-span-2 space-y-3">
+            <div class="video-responsive-container bg-black border border-zinc-800">
+              <iframe id="modal-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+
+            <div id="sponsor-link-box" class="hidden">
+              <a id="sponsor-link-btn" href="#" target="_blank" rel="noopener noreferrer" class="btn-secondary w-full text-xs py-2">
+                Visit Official Sponsor Website &rarr;
+              </a>
+            </div>
+          </div>
+
+          <!-- Anti-Cheat Timer & Sidebar Ad Right 1 Col -->
+          <div class="space-y-4">
+            
+            <div class="mono-card p-5 text-center">
+              <span class="text-[11px] uppercase tracking-wider font-mono text-zinc-500 block mb-2">Timer Verification</span>
+
+              <!-- Warning Alert on Tab Inactive -->
+              <div id="tab-warning" class="hidden p-3 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs font-semibold mb-3 pulse-warning">
+                Tab Inactive — Timer Paused! Stay focused on this window to earn.
+              </div>
+
+              <!-- Timer Numbers -->
+              <div class="my-2">
+                <span id="timer-display" class="font-mono-num font-black text-4xl sm:text-5xl text-white tracking-tight">00:30</span>
+              </div>
+
+              <!-- Progress bar -->
+              <div class="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden my-3 border border-zinc-800">
+                <div id="timer-bar" class="bg-white h-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+
+              <div class="text-xs text-zinc-400 mb-4">
+                Reward: <strong id="modal-reward" class="text-white font-mono font-bold">+50 Coins</strong>
+              </div>
+
+              <!-- Claim Button -->
+              <button id="claim-btn" disabled onclick="handleClaimVideo()" class="btn-primary w-full py-2.5">
+                Complete Timer To Claim
+              </button>
+            </div>
+
+            <!-- ======================================================== -->
+            <!-- A-ADS SIDEBAR BANNER (300x250) SLOT                      -->
+            <!-- ======================================================== -->
+            <div id="ad-banner-sidebar" class="w-full rounded-lg overflow-hidden flex items-center justify-center p-2 bg-zinc-950/80 border border-zinc-900">
+              <!-- [PASTE YOUR A-ADS IFRAME HERE] -->
+              <iframe data-aa='[PASTE_YOUR_A_ADS_UNIT_ID_HERE]' src='https://acceptable.a-ads.com/[PASTE_YOUR_A_ADS_UNIT_ID_HERE]' style='border:0px; padding:0; width:100%; max-width:300px; height:250px; overflow:hidden; background-color: transparent;' loading='lazy'></iframe>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-zinc-900 py-6 text-xs text-zinc-500 mt-auto">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>&copy; 2026 RewardZone. 1,000 Coins = $1.00 USD.</div>
+      <div class="text-zinc-500">Active Tab Anti-Cheat Verification Active</div>
+    </div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/watch.js"></script>
+</body>
+</html>

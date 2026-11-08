@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Referral Hub | RewardZone</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/custom.css">
+</head>
+<body class="bg-black min-h-screen text-zinc-100 flex flex-col antialiased selection:bg-white selection:text-black">
+
+  <!-- ======================================================== -->
+  <!-- NAVIGATION HEADER                                        -->
+  <!-- ======================================================== -->
+  <header class="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-zinc-800/80">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      
+      <!-- Brand & Navigation -->
+      <div class="flex items-center gap-8">
+        <a href="/" class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black font-black text-sm tracking-tighter">
+            RZ
+          </div>
+          <span class="text-base font-bold tracking-tight text-white">REWARDZONE</span>
+        </a>
+
+        <nav class="hidden md:flex items-center gap-1">
+          <a href="/" class="nav-link">Overview</a>
+          <a href="/watch" class="nav-link">Watch & Earn</a>
+          <a href="/tasks" class="nav-link">Tasks & Daily</a>
+          <a href="/referrals" class="nav-link active">Referrals</a>
+          <a href="/withdraw" class="nav-link">Cashout</a>
+        </nav>
+      </div>
+
+      <!-- User Stats / Authentication Actions -->
+      <div class="flex items-center gap-3">
+        <div id="header-user-menu" class="hidden items-center gap-3">
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
+            <span class="text-xs text-zinc-400">Balance:</span>
+            <span id="header-coins-balance" class="font-mono-num font-semibold text-sm text-white">0</span>
+            <span class="text-xs text-zinc-500">Coins</span>
+            <span class="text-xs text-zinc-600">&bull;</span>
+            <span id="header-usd-balance" class="font-mono-num font-semibold text-xs text-zinc-300">$0.00</span>
+          </div>
+
+          <div class="flex items-center gap-2 pl-1">
+            <span id="header-username" class="text-xs font-medium text-zinc-300 hidden sm:inline">user</span>
+            <button onclick="handleLogout()" class="px-2.5 py-1.5 rounded-md bg-zinc-900 hover:bg-zinc-800 text-xs text-zinc-400 hover:text-white border border-zinc-800 transition-colors">
+              Sign Out
+            </button>
+          </div>
+        </div>
+
+        <div id="header-guest-buttons" class="flex items-center gap-2.5">
+          <a href="/login" class="text-xs font-semibold text-zinc-400 hover:text-white px-3 py-1.5 transition-colors">
+            Sign In
+          </a>
+          <a href="/register" class="btn-primary text-xs py-1.5 px-3.5">
+            Get Started
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Mobile Nav Bar -->
+    <div class="md:hidden border-t border-zinc-900 px-4 py-2 flex items-center justify-between gap-1 overflow-x-auto text-xs">
+      <a href="/" class="nav-link py-1 px-2.5">Overview</a>
+      <a href="/watch" class="nav-link py-1 px-2.5">Watch</a>
+      <a href="/tasks" class="nav-link py-1 px-2.5">Tasks</a>
+      <a href="/referrals" class="nav-link active py-1 px-2.5">Referrals</a>
+      <a href="/withdraw" class="nav-link py-1 px-2.5">Cashout</a>
+    </div>
+  </header>
+
+  <!-- ======================================================== -->
+  <!-- MAIN CONTENT CONTAINER                                   -->
+  <!-- ======================================================== -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
+
+    <!-- ======================================================== -->
+    <!-- A-ADS TOP BANNER (728x90) SLOT                           -->
+    <!-- ======================================================== -->
+    <div id="ad-banner-top" class="w-full rounded-lg overflow-hidden flex items-center justify-center p-2 bg-zinc-950/80 border border-zinc-900">
+      <!-- [PASTE YOUR A-ADS IFRAME HERE] -->
+      <iframe data-aa='[PASTE_YOUR_A_ADS_UNIT_ID_HERE]' src='https://acceptable.a-ads.com/[PASTE_YOUR_A_ADS_UNIT_ID_HERE]' style='border:0px; padding:0; width:100%; max-width:728px; height:90px; overflow:hidden; background-color: transparent;' loading='lazy'></iframe>
+    </div>
+
+    <!-- Referral Hero Card -->
+    <section class="mono-card p-6 sm:p-8 space-y-6">
+      <div class="max-w-3xl">
+        <span class="text-[11px] font-mono text-zinc-500 uppercase tracking-wider block mb-1">Tiered Commission Engine</span>
+        <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">Invite Partners, Earn 10% For Life</h1>
+        <p class="text-xs sm:text-sm text-zinc-400 mt-2 leading-relaxed">
+          Whenever your invited members complete a video stream or offerwall task, you automatically receive <strong class="text-white">10% of their earnings</strong> credited directly to your coin balance.
+        </p>
+      </div>
+
+      <!-- Share Box -->
+      <div class="p-4 rounded-lg bg-zinc-900/90 border border-zinc-800 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div class="flex-1 flex items-center bg-black px-3.5 py-2.5 rounded-md border border-zinc-800 overflow-hidden">
+          <input 
+            id="ref-link-input" 
+            type="text" 
+            readonly 
+            value="https://rewardzone.local/register?ref=..." 
+            class="bg-transparent border-0 text-white font-mono text-xs w-full focus:outline-none select-all"
+          >
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="copyRefLink()" class="btn-primary text-xs py-2 px-4 whitespace-nowrap">
+            Copy Link
+          </button>
+          <button onclick="shareWhatsApp()" class="btn-secondary text-xs py-2 px-3 whitespace-nowrap">
+            WhatsApp
+          </button>
+          <button onclick="shareX()" class="btn-secondary text-xs py-2 px-3 whitespace-nowrap">
+            X (Twitter)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Referral Stats Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="mono-card p-5">
+        <span class="text-xs font-semibold text-zinc-400 block mb-1">Total Referrals</span>
+        <div id="stat-recruits-count" class="text-2xl font-black font-mono-num text-white">0</div>
+        <span class="text-[11px] text-zinc-500 mt-1 block">Active invited members</span>
+      </div>
+
+      <div class="mono-card p-5">
+        <span class="text-xs font-semibold text-zinc-400 block mb-1">Commission Earned</span>
+        <div id="stat-recruits-earnings" class="text-2xl font-black font-mono-num text-white">0 Coins</div>
+        <span id="stat-recruits-usd" class="text-[11px] text-zinc-500 font-mono-num mt-1 block">$0.00 USD from 10% rate</span>
+      </div>
+
+      <div class="mono-card p-5">
+        <span class="text-xs font-semibold text-zinc-400 block mb-1">Your Referral Code</span>
+        <div id="stat-my-code" class="text-2xl font-black font-mono text-white">------</div>
+        <span class="text-[11px] text-zinc-500 mt-1 block">Unique ambassador tag</span>
+      </div>
+    </div>
+
+    <!-- Partner Network Table -->
+    <section class="mono-card p-6">
+      <h3 class="text-base font-bold text-white mb-4">Your Recruited Network</h3>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-zinc-300">
+          <thead class="border-b border-zinc-800 text-zinc-500 uppercase font-mono">
+            <tr>
+              <th class="py-2.5 px-3">Partner Username</th>
+              <th class="py-2.5 px-3">Joined Date</th>
+              <th class="py-2.5 px-3">Their Total Earned</th>
+              <th class="py-2.5 px-3 text-right">10% Commission Generated</th>
+            </tr>
+          </thead>
+          <tbody id="referrals-table-tbody" class="divide-y divide-zinc-900">
+            <tr>
+              <td colspan="4" class="py-6 text-center text-zinc-600">
+                No referrals recorded yet. Share your invite link to start earning!
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- A-ADS SIDEBAR / SPONSOR BANNER (300x250) SLOT            -->
+    <!-- ======================================================== -->
+    <div id="ad-banner-sidebar" class="w-full rounded-lg overflow-hidden flex items-center justify-center p-2 bg-zinc-950/80 border border-zinc-900">
+      <!-- [PASTE YOUR A-ADS IFRAME HERE] -->
+      <iframe data-aa='[PASTE_YOUR_A_ADS_UNIT_ID_HERE]' src='https://acceptable.a-ads.com/[PASTE_YOUR_A_ADS_UNIT_ID_HERE]' style='border:0px; padding:0; width:100%; max-width:300px; height:250px; overflow:hidden; background-color: transparent;' loading='lazy'></iframe>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-zinc-900 py-6 text-xs text-zinc-500 mt-auto">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>&copy; 2026 RewardZone. 1,000 Coins = $1.00 USD.</div>
+      <div class="text-zinc-500">Tiered Referral Commissions Automations</div>
+    </div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/referrals.js"></script>
+</body>
+</html>

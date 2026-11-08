@@ -1,4 +1,4 @@
-// RewardZone Admin Command Center JavaScript Logic
+// RewardZone Admin Command Center JavaScript Logic (Minimalist Monochrome Theme)
 
 const adminState = {
   token: localStorage.getItem('rewardzone_token') || null,
@@ -11,13 +11,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadAdminStats();
   switchAdminTab('withdrawals');
 
-  // Auto refresh stats every 30 seconds
   setInterval(() => {
     loadAdminStats();
   }, 30000);
 });
 
-// Admin Authorization Header Helper
 function getAuthHeaders() {
   const headers = { 'Content-Type': 'application/json' };
   if (adminState.token) {
@@ -29,38 +27,19 @@ function getAuthHeaders() {
   return headers;
 }
 
-// Verify Admin Session
+// Verify Admin Session: redirect to /login if unauthenticated
 async function verifyAdminAccess() {
   try {
     const res = await fetch('/api/admin/stats', { headers: getAuthHeaders() });
     if (!res.ok) {
-      // Prompt for login if unauthorized
-      const pass = prompt('RewardZone Admin Access Required.\nEnter Administrator Password:');
-      if (pass) {
-        const loginRes = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usernameOrEmail: 'admin', password: pass })
-        });
-        const loginData = await loginRes.json();
-        if (loginRes.ok && loginData.user.is_admin === 1) {
-          adminState.token = loginData.token;
-          localStorage.setItem('rewardzone_token', loginData.token);
-          showToast('Admin authenticated successfully.', 'success');
-        } else {
-          alert('Invalid admin credentials.');
-          window.location.href = '/';
-        }
-      } else {
-        window.location.href = '/';
-      }
+      window.location.href = '/login?redirect=/admin';
     }
   } catch (err) {
     console.error('Admin verification error', err);
+    window.location.href = '/login?redirect=/admin';
   }
 }
 
-// Tab Switching
 function switchAdminTab(tabId) {
   adminState.activeTab = tabId;
 
@@ -83,7 +62,6 @@ function switchAdminTab(tabId) {
   if (tabId === 'users') loadAdminUsers();
 }
 
-// Load KPIs Overview
 async function loadAdminStats() {
   try {
     const res = await fetch('/api/admin/stats', { headers: getAuthHeaders() });
@@ -95,9 +73,9 @@ async function loadAdminStats() {
     document.getElementById('kpi-usd-circulation').textContent = `~$${stats.usdCirculation} USD`;
     document.getElementById('kpi-pending-withdrawals').textContent = stats.pendingWithdrawalsCount;
     document.getElementById('badge-pending-count').textContent = stats.pendingWithdrawalsCount;
-    document.getElementById('kpi-pending-usd').textContent = `$${stats.pendingWithdrawalsUsd} awaiting review`;
+    document.getElementById('kpi-pending-usd').textContent = `$${stats.pendingWithdrawalsUsd} queued`;
     document.getElementById('kpi-paid-out-usd').textContent = `$${stats.totalPaidOutUsd}`;
-    document.getElementById('kpi-approved-count').textContent = `${stats.approvedWithdrawalsCount} requests paid`;
+    document.getElementById('kpi-approved-count').textContent = `${stats.approvedWithdrawalsCount} approved`;
     document.getElementById('kpi-total-earned').textContent = stats.totalEarnedAll.toLocaleString();
     document.getElementById('kpi-tasks-completed').textContent = stats.totalTasksCompleted.toLocaleString();
   } catch (err) {
@@ -119,7 +97,7 @@ async function loadAdminWithdrawals() {
     if (!data.withdrawals || data.withdrawals.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="9" class="px-4 py-8 text-center text-slate-500">
+          <td colspan="9" class="py-6 text-center text-zinc-600">
             No withdrawal requests in queue.
           </td>
         </tr>
@@ -132,62 +110,62 @@ async function loadAdminWithdrawals() {
       let actions = '';
 
       if (w.status === 'pending') {
-        statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">Pending</span>';
+        statusBadge = '<span class="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700 text-zinc-300 font-mono text-[10px]">Pending</span>';
         actions = `
-          <div class="flex items-center justify-end gap-2">
-            <button onclick="inspectUserAudit(${w.user_id})" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold border border-slate-700" title="Inspect user earnings & task audit trail">
-              <i class="fa-solid fa-magnifying-glass"></i> Audit
+          <div class="flex items-center justify-end gap-1.5">
+            <button onclick="inspectUserAudit(${w.user_id})" class="btn-secondary text-[11px] py-1 px-2.5">
+              Audit
             </button>
-            <button onclick="approveWithdrawal(${w.id})" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm">
+            <button onclick="approveWithdrawal(${w.id})" class="btn-primary text-[11px] py-1 px-2.5">
               Approve
             </button>
-            <button onclick="rejectWithdrawal(${w.id}, ${w.amount_coins})" class="px-2.5 py-1 rounded bg-rose-600/80 hover:bg-rose-500 text-white text-xs font-bold transition-all" title="Refunds coins back to user balance">
+            <button onclick="rejectWithdrawal(${w.id}, ${w.amount_coins})" class="btn-secondary text-[11px] py-1 px-2.5 text-zinc-400 hover:text-red-300">
               Reject
             </button>
           </div>
         `;
       } else if (w.status === 'approved') {
-        statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Paid</span>';
+        statusBadge = '<span class="px-2 py-0.5 rounded bg-white text-black font-mono font-bold text-[10px]">Paid</span>';
         actions = `
-          <button onclick="inspectUserAudit(${w.user_id})" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold border border-slate-700">
-            <i class="fa-solid fa-magnifying-glass"></i> Audit
+          <button onclick="inspectUserAudit(${w.user_id})" class="btn-secondary text-[11px] py-1 px-2.5">
+            Audit
           </button>
         `;
       } else {
-        statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30">Rejected</span>';
+        statusBadge = '<span class="px-2 py-0.5 rounded bg-zinc-900 border border-red-900 text-red-400 font-mono text-[10px]">Refunded</span>';
         actions = `
-          <button onclick="inspectUserAudit(${w.user_id})" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold border border-slate-700">
-            <i class="fa-solid fa-magnifying-glass"></i> Audit
+          <button onclick="inspectUserAudit(${w.user_id})" class="btn-secondary text-[11px] py-1 px-2.5">
+            Audit
           </button>
         `;
       }
 
       return `
-        <tr class="hover:bg-slate-800/40">
-          <td class="px-4 py-3 font-mono-num text-xs text-slate-400">#${w.id}</td>
-          <td class="px-4 py-3">
-            <div class="font-bold text-white text-xs sm:text-sm">${w.username}</div>
-            <div class="text-[11px] text-slate-400 font-mono-num">${w.ip_address || 'Unknown IP'}</div>
+        <tr class="hover:bg-zinc-900/50">
+          <td class="py-2.5 px-3 font-mono text-zinc-500">#${w.id}</td>
+          <td class="py-2.5 px-3">
+            <div class="font-semibold text-white">${w.username}</div>
+            <div class="text-[10px] text-zinc-500 font-mono">${w.ip_address || '127.0.0.1'}</div>
           </td>
-          <td class="px-4 py-3 font-semibold text-xs sm:text-sm text-slate-200">${w.crypto_network}</td>
-          <td class="px-4 py-3 font-mono-num text-xs text-slate-300 select-all" title="${w.wallet_address}">
-            ${w.wallet_address.substring(0, 8)}...${w.wallet_address.substring(w.wallet_address.length - 6)}
+          <td class="py-2.5 px-3 font-medium text-white">${w.crypto_network}</td>
+          <td class="py-2.5 px-3 font-mono text-zinc-400 select-all" title="${w.wallet_address}">
+            ${w.wallet_address.substring(0, 6)}...${w.wallet_address.substring(w.wallet_address.length - 4)}
           </td>
-          <td class="px-4 py-3 font-mono-num text-white">${w.amount_coins.toLocaleString()}</td>
-          <td class="px-4 py-3 font-mono-num font-bold text-emerald-400">$${w.amount_usd.toFixed(2)}</td>
-          <td class="px-4 py-3 font-mono-num text-xs text-slate-400">${new Date(w.created_at).toLocaleDateString()}</td>
-          <td class="px-4 py-3">${statusBadge}</td>
-          <td class="px-4 py-3 text-right">${actions}</td>
+          <td class="py-2.5 px-3 font-mono text-white">${w.amount_coins.toLocaleString()}</td>
+          <td class="py-2.5 px-3 font-mono font-bold text-white">$${w.amount_usd.toFixed(2)}</td>
+          <td class="py-2.5 px-3 font-mono text-zinc-500">${new Date(w.created_at).toLocaleDateString()}</td>
+          <td class="py-2.5 px-3">${statusBadge}</td>
+          <td class="py-2.5 px-3 text-right">${actions}</td>
         </tr>
       `;
     }).join('');
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-6 text-center text-rose-400">Failed to load withdrawals.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-red-400">Failed to load withdrawals.</td></tr>`;
   }
 }
 
 async function approveWithdrawal(id) {
-  if (!confirm(`Are you sure you want to approve Withdrawal #${id}? This marks it as paid to the user.`)) return;
+  if (!confirm(`Approve Withdrawal #${id}? This marks it as paid.`)) return;
 
   try {
     const res = await fetch(`/api/admin/withdrawals/${id}/approve`, {
@@ -199,16 +177,16 @@ async function approveWithdrawal(id) {
       showToast(data.error || 'Failed to approve withdrawal.', 'error');
       return;
     }
-    showToast(data.message || 'Withdrawal approved.', 'success');
+    showToast('Withdrawal marked as paid.', 'success');
     loadAdminStats();
     loadAdminWithdrawals();
   } catch (err) {
-    showToast('Network error during approval.', 'error');
+    showToast('Network error approving withdrawal.', 'error');
   }
 }
 
 async function rejectWithdrawal(id, amountCoins) {
-  if (!confirm(`Are you sure you want to REJECT Withdrawal #${id}?\n\nThis will automatically REFUND ${amountCoins.toLocaleString()} Coins back to the user's account.`)) return;
+  if (!confirm(`Reject Withdrawal #${id}?\n\nThis will automatically REFUND ${amountCoins.toLocaleString()} Coins back to the user.`)) return;
 
   try {
     const res = await fetch(`/api/admin/withdrawals/${id}/reject`, {
@@ -220,60 +198,57 @@ async function rejectWithdrawal(id, amountCoins) {
       showToast(data.error || 'Failed to reject withdrawal.', 'error');
       return;
     }
-    showToast(data.message || 'Withdrawal rejected and coins refunded.', 'info');
+    showToast('Withdrawal rejected and coins refunded.', 'info');
     loadAdminStats();
     loadAdminWithdrawals();
   } catch (err) {
-    showToast('Network error during rejection.', 'error');
+    showToast('Network error rejecting withdrawal.', 'error');
   }
 }
 
 // ==========================================
-// 2. USER AUDIT TRAIL & ANTI-CHEAT INSPECT
+// 2. USER AUDIT TRAIL
 // ==========================================
 async function inspectUserAudit(userId) {
   try {
     const res = await fetch(`/api/admin/users/${userId}/audit`, { headers: getAuthHeaders() });
     const data = await res.json();
     if (!res.ok) {
-      showToast(data.error || 'Failed to load user audit.', 'error');
+      showToast(data.error || 'Failed to load audit.', 'error');
       return;
     }
 
     document.getElementById('audit-username').textContent = data.user.username;
-    document.getElementById('audit-user-details').textContent = `User ID: #${data.user.id} &bull; Email: ${data.user.email} &bull; IP: ${data.user.ip_address || 'None'} &bull; Balance: ${data.user.balance_coins.toLocaleString()} Coins &bull; Total Earned: ${data.user.total_earned.toLocaleString()} Coins`;
+    document.getElementById('audit-user-details').textContent = `User ID: #${data.user.id} • Email: ${data.user.email} • IP: ${data.user.ip_address || 'None'} • Balance: ${data.user.balance_coins.toLocaleString()} Coins`;
 
-    // Tasks audit table
     const taskTbody = document.getElementById('audit-tasks-tbody');
     if (!data.taskHistory || data.taskHistory.length === 0) {
-      taskTbody.innerHTML = `<tr><td colspan="6" class="px-3 py-4 text-center text-slate-500">No completed tasks logged.</td></tr>`;
+      taskTbody.innerHTML = `<tr><td colspan="5" class="py-3 px-3 text-center text-zinc-600">No completed tasks logged.</td></tr>`;
     } else {
       taskTbody.innerHTML = data.taskHistory.map(t => `
-        <tr class="hover:bg-slate-900">
-          <td class="px-3 py-2 font-mono-num text-slate-400">#${t.id}</td>
-          <td class="px-3 py-2 font-semibold text-white">${t.task_type}</td>
-          <td class="px-3 py-2 text-slate-300 text-xs">${t.video_title || 'Direct Task'}</td>
-          <td class="px-3 py-2 font-mono-num text-emerald-400 font-bold">+${t.reward_coins}</td>
-          <td class="px-3 py-2 font-mono-num text-slate-500 text-[10px] truncate max-w-[120px]">${t.external_tx_id || '-'}</td>
-          <td class="px-3 py-2 font-mono-num text-slate-400 text-[11px]">${new Date(t.created_at).toLocaleString()}</td>
+        <tr class="hover:bg-zinc-900">
+          <td class="py-1.5 px-3 font-mono text-zinc-500">#${t.id}</td>
+          <td class="py-1.5 px-3 font-semibold text-white">${t.task_type}</td>
+          <td class="py-1.5 px-3 text-zinc-300">${t.video_title || 'Completed Task'}</td>
+          <td class="py-1.5 px-3 font-mono font-semibold text-white">+${t.reward_coins}</td>
+          <td class="py-1.5 px-3 font-mono text-zinc-500">${new Date(t.created_at).toLocaleString()}</td>
         </tr>
       `).join('');
     }
 
-    // Sessions audit table
     const sessTbody = document.getElementById('audit-sessions-tbody');
     if (!data.taskSessions || data.taskSessions.length === 0) {
-      sessTbody.innerHTML = `<tr><td colspan="4" class="px-3 py-4 text-center text-slate-500">No video sessions logged.</td></tr>`;
+      sessTbody.innerHTML = `<tr><td colspan="4" class="py-3 px-3 text-center text-zinc-600">No video sessions logged.</td></tr>`;
     } else {
       sessTbody.innerHTML = data.taskSessions.map(s => `
-        <tr class="hover:bg-slate-900">
-          <td class="px-3 py-2 text-slate-200">${s.title || `Task #${s.task_id}`}</td>
-          <td class="px-3 py-2 font-mono-num">${s.duration_seconds}s</td>
-          <td class="px-3 py-2 font-mono-num text-slate-400 text-[11px]">${new Date(s.start_time).toLocaleString()}</td>
-          <td class="px-3 py-2">
+        <tr class="hover:bg-zinc-900">
+          <td class="py-1.5 px-3 text-zinc-300">${s.title || `Task #${s.task_id}`}</td>
+          <td class="py-1.5 px-3 font-mono">${s.duration_seconds}s</td>
+          <td class="py-1.5 px-3 font-mono text-zinc-500">${new Date(s.start_time).toLocaleString()}</td>
+          <td class="py-1.5 px-3">
             ${s.completed === 1 
-              ? '<span class="text-emerald-400 font-bold text-xs"><i class="fa-solid fa-check"></i> Verified</span>' 
-              : '<span class="text-amber-400 font-bold text-xs"><i class="fa-solid fa-clock"></i> Uncompleted</span>'}
+              ? '<span class="text-white font-mono font-bold">Verified</span>' 
+              : '<span class="text-zinc-500 font-mono">Uncompleted</span>'}
           </td>
         </tr>
       `).join('');
@@ -281,7 +256,7 @@ async function inspectUserAudit(userId) {
 
     document.getElementById('audit-modal').classList.remove('hidden');
   } catch (err) {
-    showToast('Failed to open user audit modal.', 'error');
+    showToast('Failed to open audit modal.', 'error');
   }
 }
 
@@ -301,31 +276,26 @@ async function loadAdminVideos() {
     const data = await res.json();
 
     if (!data.videos || data.videos.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">No video tasks created yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-zinc-600">No video tasks created yet.</td></tr>`;
       return;
     }
 
     tbody.innerHTML = data.videos.map(v => `
-      <tr class="hover:bg-slate-800/40">
-        <td class="px-4 py-3 font-mono-num text-xs text-slate-400">#${v.id}</td>
-        <td class="px-4 py-3">
-          <div class="w-16 h-10 rounded overflow-hidden bg-black border border-slate-700">
-            <iframe src="${v.youtube_embed_url}" class="w-full h-full pointer-events-none scale-75 origin-top-left"></iframe>
-          </div>
-        </td>
-        <td class="px-4 py-3 font-bold text-white text-xs sm:text-sm max-w-xs truncate">${v.title}</td>
-        <td class="px-4 py-3 font-mono-num text-xs text-slate-300">${v.duration_seconds}s</td>
-        <td class="px-4 py-3 font-mono-num font-bold text-emerald-400 text-xs sm:text-sm">+${v.reward_coins}</td>
-        <td class="px-4 py-3 font-mono-num text-xs text-slate-400 truncate max-w-[150px]">${v.ad_direct_link || 'None'}</td>
-        <td class="px-4 py-3 text-right">
-          <button onclick="deleteVideoTask(${v.id})" class="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-semibold border border-rose-500/30">
-            <i class="fa-solid fa-trash mr-1"></i> Delete
+      <tr class="hover:bg-zinc-900/50">
+        <td class="py-2.5 px-3 font-mono text-zinc-500">#${v.id}</td>
+        <td class="py-2.5 px-3 font-medium text-white max-w-xs truncate">${v.title}</td>
+        <td class="py-2.5 px-3 font-mono text-zinc-400">${v.duration_seconds}s</td>
+        <td class="py-2.5 px-3 font-mono font-semibold text-white">+${v.reward_coins}</td>
+        <td class="py-2.5 px-3 font-mono text-zinc-500 truncate max-w-[120px]">${v.ad_direct_link || 'None'}</td>
+        <td class="py-2.5 px-3 text-right">
+          <button onclick="deleteVideoTask(${v.id})" class="btn-secondary text-[11px] py-1 px-2.5 text-zinc-400 hover:text-red-300">
+            Delete
           </button>
         </td>
       </tr>
     `).join('');
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-rose-400">Failed to load video tasks.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-red-400">Failed to load video tasks.</td></tr>`;
   }
 }
 
@@ -348,7 +318,7 @@ async function handleAddVideoSubmit(e) {
       showToast(data.error || 'Failed to add video task.', 'error');
       return;
     }
-    showToast('Video task created and live!', 'success');
+    showToast('Video task created.', 'success');
     document.getElementById('add-video-form').reset();
     loadAdminVideos();
   } catch (err) {
@@ -357,7 +327,7 @@ async function handleAddVideoSubmit(e) {
 }
 
 async function deleteVideoTask(id) {
-  if (!confirm(`Are you sure you want to delete Video Task #${id}?`)) return;
+  if (!confirm(`Delete Video Task #${id}?`)) return;
 
   try {
     const res = await fetch(`/api/admin/videos/${id}`, {
@@ -366,18 +336,18 @@ async function deleteVideoTask(id) {
     });
     const data = await res.json();
     if (!res.ok) {
-      showToast(data.error || 'Failed to delete video task.', 'error');
+      showToast(data.error || 'Failed to delete task.', 'error');
       return;
     }
-    showToast(data.message || 'Video task removed.', 'info');
+    showToast('Video task deleted.', 'info');
     loadAdminVideos();
   } catch (err) {
-    showToast('Network error deleting video task.', 'error');
+    showToast('Network error deleting task.', 'error');
   }
 }
 
 // ==========================================
-// 4. USERS MANAGEMENT
+// 4. USERS LIST
 // ==========================================
 async function loadAdminUsers() {
   const tbody = document.getElementById('admin-users-tbody');
@@ -388,35 +358,35 @@ async function loadAdminUsers() {
     const data = await res.json();
 
     if (!data.users || data.users.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-6 text-center text-slate-500">No users found.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" class="py-6 text-center text-zinc-600">No users found.</td></tr>`;
       return;
     }
 
     tbody.innerHTML = data.users.map(u => `
-      <tr class="hover:bg-slate-800/40">
-        <td class="px-4 py-3 font-mono-num text-xs text-slate-400">#${u.id}</td>
-        <td class="px-4 py-3 font-bold text-white text-xs sm:text-sm">${u.username}</td>
-        <td class="px-4 py-3 text-slate-300 text-xs">${u.email}</td>
-        <td class="px-4 py-3 font-mono-num text-xs text-slate-400">${u.ip_address || '127.0.0.1'}</td>
-        <td class="px-4 py-3 font-mono-num font-bold text-cyan-300 text-xs">${u.referral_code}</td>
-        <td class="px-4 py-3 text-slate-400 text-xs">${u.referrer_username ? `@${u.referrer_username}` : 'Direct'}</td>
-        <td class="px-4 py-3 font-mono-num text-violet-300 font-semibold">${u.total_referrals}</td>
-        <td class="px-4 py-3 font-mono-num font-bold text-emerald-400">${u.balance_coins.toLocaleString()}</td>
-        <td class="px-4 py-3 font-mono-num text-slate-300">${u.total_earned.toLocaleString()}</td>
-        <td class="px-4 py-3 text-right">
-          <button onclick="inspectUserAudit(${u.id})" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold border border-slate-700">
-            <i class="fa-solid fa-magnifying-glass"></i> Audit
+      <tr class="hover:bg-zinc-900/50">
+        <td class="py-2.5 px-3 font-mono text-zinc-500">#${u.id}</td>
+        <td class="py-2.5 px-3 font-semibold text-white">${u.username}</td>
+        <td class="py-2.5 px-3 text-zinc-400 font-mono text-[11px]">${u.email}</td>
+        <td class="py-2.5 px-3 font-mono text-zinc-500 text-[11px]">${u.ip_address || '127.0.0.1'}</td>
+        <td class="py-2.5 px-3 font-mono font-bold text-white">${u.referral_code}</td>
+        <td class="py-2.5 px-3 text-zinc-400 text-xs">${u.referrer_username ? `@${u.referrer_username}` : 'Direct'}</td>
+        <td class="py-2.5 px-3 font-mono text-zinc-300">${u.total_referrals}</td>
+        <td class="py-2.5 px-3 font-mono font-semibold text-white">${u.balance_coins.toLocaleString()}</td>
+        <td class="py-2.5 px-3 font-mono text-zinc-400">${u.total_earned.toLocaleString()}</td>
+        <td class="py-2.5 px-3 text-right">
+          <button onclick="inspectUserAudit(${u.id})" class="btn-secondary text-[11px] py-1 px-2.5">
+            Audit
           </button>
         </td>
       </tr>
     `).join('');
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-6 text-center text-rose-400">Failed to load user accounts.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="py-6 text-center text-red-400">Failed to load users.</td></tr>`;
   }
 }
 
 // ==========================================
-// 5. LIVE S2S POSTBACK SIMULATOR
+// 5. LIVE S2S SIMULATOR
 // ==========================================
 async function triggerSimulatedPostback() {
   const userId = document.getElementById('test-postback-userid').value;
@@ -428,58 +398,29 @@ async function triggerSimulatedPostback() {
 
   const resultBox = document.getElementById('postback-test-result');
   resultBox.classList.remove('hidden');
-  resultBox.innerHTML = `Firing Postback Webhook for User #${userId} (Payout: ${payout} Coins, TxID: ${txid})...`;
+  resultBox.innerHTML = `Firing postback for User #${userId} (+${payout} Coins, TxID: ${txid})...`;
 
   try {
     const genRes = await fetch(`/api/postback/generate-test-url?payout=${payout}`);
     const genData = await genRes.json();
 
-    // Execute the postback URL
     const postbackRes = await fetch(`/api/postback?userid=${userId}&payout=${payout}&txid=${txid}&sig=${genData.sig}`);
     const text = await postbackRes.text();
 
     resultBox.innerHTML = `
-      <div class="text-emerald-400 font-bold mb-1">Response: ${postbackRes.status} OK (Body: "${text}")</div>
-      <div class="text-slate-400 text-[11px]">Webhook Endpoint: /api/postback?userid=${userId}&payout=${payout}&txid=${txid}&sig=${genData.sig}</div>
-      <div class="text-slate-300 mt-2">Database credited: +${payout} Coins to User #${userId}. If user has a referrer, 10% was atomically credited!</div>
+      <div class="text-white font-bold mb-1">Response: ${postbackRes.status} OK (Body: "${text}")</div>
+      <div class="text-zinc-500 text-[11px] break-all">URL: /api/postback?userid=${userId}&payout=${payout}&txid=${txid}&sig=${genData.sig}</div>
+      <div class="text-zinc-400 mt-2">Credited: +${payout} Coins to User #${userId}. If user has a referrer, 10% was automatically credited.</div>
     `;
 
-    showToast(`Postback successfully processed! Credited +${payout} Coins.`, 'success');
+    showToast(`Postback processed (+${payout} Coins).`, 'success');
     loadAdminStats();
   } catch (err) {
-    resultBox.innerHTML = `<span class="text-rose-400">Postback error: ${err.message}</span>`;
+    resultBox.innerHTML = `<span class="text-red-400">Postback error: ${err.message}</span>`;
   }
 }
 
 function handleAdminLogout() {
   localStorage.removeItem('rewardzone_token');
-  window.location.href = '/';
-}
-
-// Toast Notifications
-function showToast(message, type = 'success') {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-
-  const toast = document.createElement('div');
-  toast.className = 'toast flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-sm font-medium';
-
-  if (type === 'success') {
-    toast.className += ' bg-slate-900 border-emerald-500/50 text-white';
-    toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i> <span>${message}</span>`;
-  } else if (type === 'error') {
-    toast.className += ' bg-slate-900 border-rose-500/50 text-white';
-    toast.innerHTML = `<i class="fa-solid fa-circle-exclamation text-rose-400 text-lg"></i> <span>${message}</span>`;
-  } else {
-    toast.className += ' bg-slate-900 border-amber-500/50 text-white';
-    toast.innerHTML = `<i class="fa-solid fa-circle-info text-amber-400 text-lg"></i> <span>${message}</span>`;
-  }
-
-  container.appendChild(toast);
-  setTimeout(() => toast.classList.add('show'), 10);
-
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 300);
-  }, 4000);
+  window.location.href = '/login';
 }

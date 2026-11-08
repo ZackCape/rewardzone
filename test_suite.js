@@ -247,8 +247,39 @@ async function runTests() {
     }
     console.log(`   ✅ Video Task #${newTaskId} deleted.\n`);
 
+    // 11. Multi-Page Application (MPA) Routes & Admin Lockdown
+    console.log('1️⃣1️⃣ Testing MPA Routing & Hidden Admin Access Lockdown...');
+    const mpaPages = ['/', '/login', '/register', '/watch', '/tasks', '/referrals', '/withdraw'];
+    for (const page of mpaPages) {
+      const pageRes = await request('GET', page);
+      if (pageRes.status !== 200) {
+        throw new Error(`MPA page ${page} returned status ${pageRes.status}`);
+      }
+      // Verify no exposed "Admin Dashboard" button in public HTML
+      if (typeof pageRes.body === 'string' && pageRes.body.includes('Admin Dashboard')) {
+        throw new Error(`Security breach: "Admin Dashboard" is exposed in public page ${page}!`);
+      }
+    }
+    console.log('   ✅ All 7 MPA pages served with clean URLs. Zero exposed admin buttons.');
+
+    // Verify unauthenticated /admin redirects to /login
+    const unauthAdminRes = await request('GET', '/admin');
+    if (unauthAdminRes.status !== 302 || !unauthAdminRes.headers.location.includes('/login')) {
+      throw new Error(`Unauthenticated /admin did not redirect! Status: ${unauthAdminRes.status}`);
+    }
+    console.log('   🔒 Admin lock verified: Unauthenticated /admin immediately redirected (HTTP 302) to /login.');
+
+    // Verify authenticated admin can access /admin
+    const authAdminRes = await request('GET', '/admin', null, {
+      'Authorization': `Bearer ${adminToken}`
+    });
+    if (authAdminRes.status !== 200) {
+      throw new Error(`Authenticated admin was denied /admin access: ${authAdminRes.status}`);
+    }
+    console.log('   ✅ Authenticated admin can access /admin.\n');
+
     console.log('=======================================================');
-    console.log('🏆 ALL 10 TEST SUITES PASSED WITH 100% SUCCESS!');
+    console.log('🏆 ALL 11 TEST SUITES PASSED WITH 100% SUCCESS!');
     console.log('=======================================================');
     process.exit(0);
 

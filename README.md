@@ -8,7 +8,7 @@ A complete, production-ready full-stack **"Watch & Task to Earn"** web applicati
 - **Backend:** Node.js + Express.js
 - **Database:** SQLite with `better-sqlite3` (WAL mode enabled, zero external DB configuration required, clean standard SQL schema portable to MySQL/Postgres)
 - **Authentication:** JWT stored in HTTP-Only Cookies and `Authorization: Bearer` headers + `bcryptjs` password hashing
-- **Frontend:** HTML5, TailwindCSS (CDN), Vanilla JavaScript, FontAwesome 6, custom cyber-themed glassmorphism CSS (`#0f172a` deep slate, `#10b981` emerald, `#8b5cf6` violet)
+- **Frontend:** Multi-Page Architecture (MPA), TailwindCSS (CDN), Vanilla JavaScript, sleek high-contrast monochrome design inspired by Vercel & Linear (`#000000` carbon black, `#09090b` zinc, `#ffffff` accents)
 
 ---
 
@@ -17,18 +17,30 @@ A complete, production-ready full-stack **"Watch & Task to Earn"** web applicati
 ```
 watch-to-earn-app/
 ├── database.js          # SQLite schema, indices, sample seed data & transactions
-├── server.js            # Express REST API, Anti-Cheat engine, S2S Webhook, Auth
+├── server.js            # Express MPA REST API, Anti-Cheat engine, S2S Webhook, Auth
+├── test_suite.js        # Automated 11-step E2E integration test suite
 ├── package.json         # NPM scripts and dependencies
 ├── .env                 # Environment configuration (secrets, ports)
 ├── .env.example         # Template configuration
+├── .gitignore           # Git ignore rules for node_modules, .env, and databases
 └── public/
-    ├── index.html       # User Portal (Watch to Earn, Offerwall, Daily, Cashout, Referrals)
-    ├── admin.html       # Admin Command Center (KPIs, Withdrawals Queue, Audit, Video CRUD)
+    ├── index.html       # Landing Page & Overview Dashboard (clean marketing for guests, stats for members)
+    ├── login.html       # Dedicated Sign In Screen
+    ├── register.html    # Dedicated Registration Screen (supports ?ref=CODE)
+    ├── watch.html       # Dedicated Watch & Earn streams page + cinema player
+    ├── tasks.html       # Dedicated CPA Offerwall & Daily Check-in Bonus page
+    ├── referrals.html   # Dedicated Referral Hub & 10% commission network table
+    ├── withdraw.html    # Dedicated Cashout & user payout history table
+    ├── admin.html       # Hidden Admin Command Center (redirects non-admin to /login)
     ├── css/
-    │   └── custom.css   # Cyber glassmorphism styling, glows, animations
+    │   └── custom.css   # Vercel/Linear-inspired sleek monochrome CSS
     └── js/
-        ├── app.js       # User SPA logic, Anti-cheat active-tab timer, modals
-        └── admin.js     # Admin dashboard management & S2S postback tester
+        ├── common.js    # Shared navigation, session checking, balance & auth header
+        ├── watch.js     # Active-tab anti-cheat timer and video claiming engine
+        ├── tasks.js     # Daily bonus timer & CPA postback simulator
+        ├── referrals.js # Referral link generator and recruit network loader
+        ├── withdraw.js  # Crypto cashout request handling and history loader
+        └── admin.js     # Hidden admin management, audit inspector, video CRUD
 ```
 
 ---

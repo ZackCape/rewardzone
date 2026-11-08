@@ -1055,18 +1055,74 @@ app.get('/api/admin/users', authenticateAdmin, (req, res) => {
   }
 });
 
-// SPA / Multi-page Fallbacks
+// ==========================================
+// 7. MULTI-PAGE APPLICATION (MPA) ROUTING
+// ==========================================
 const publicDir = path.join(__dirname, 'public');
 
-app.get('/admin', (req, res) => {
-  res.sendFile('admin.html', { root: publicDir });
-});
-
-app.get('/register', (req, res) => {
+// 1. Landing & Dashboard
+app.get('/', (req, res) => {
   res.sendFile('index.html', { root: publicDir });
 });
 
-// Fallback for SPA routing
+// 2. Dedicated Authentication Pages
+app.get('/login', (req, res) => {
+  res.sendFile('login.html', { root: publicDir });
+});
+
+app.get('/register', (req, res) => {
+  res.sendFile('register.html', { root: publicDir });
+});
+
+// 3. Feature Pages
+app.get('/watch', (req, res) => {
+  res.sendFile('watch.html', { root: publicDir });
+});
+
+app.get('/tasks', (req, res) => {
+  res.sendFile('tasks.html', { root: publicDir });
+});
+
+app.get('/referrals', (req, res) => {
+  res.sendFile('referrals.html', { root: publicDir });
+});
+
+app.get('/withdraw', (req, res) => {
+  res.sendFile('withdraw.html', { root: publicDir });
+});
+
+// 4. Hidden & Locked Down Admin Route
+// Regular users and visitors are redirected to /login immediately
+app.get('/admin', (req, res) => {
+  // Option A: Admin key in header
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey && adminKey === ADMIN_KEY) {
+    return res.sendFile('admin.html', { root: publicDir });
+  }
+
+  // Option B: JWT token from cookie or header
+  let token = req.cookies.token;
+  if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    token = req.headers.authorization.substring(7);
+  }
+
+  if (!token) {
+    return res.redirect('/login?redirect=/admin');
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(decoded.id);
+    if (!user || user.is_admin !== 1) {
+      return res.redirect('/login?redirect=/admin');
+    }
+    return res.sendFile('admin.html', { root: publicDir });
+  } catch (err) {
+    return res.redirect('/login?redirect=/admin');
+  }
+});
+
+// Fallback routing for SPA or static requests
 app.use((req, res) => {
   res.sendFile('index.html', { root: publicDir });
 });

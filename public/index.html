@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RewardZone | Watch & Task to Earn Crypto</title>
+  <title>RewardZone | Watch, Task, and Earn Crypto</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -14,11 +14,9 @@
         extend: {
           colors: {
             brand: {
-              dark: '#090d16',
-              slate: '#0f172a',
-              emerald: '#10b981',
-              violet: '#8b5cf6',
-              cyan: '#06b6d4'
+              black: '#000000',
+              zinc: '#09090b',
+              surface: '#121215'
             }
           }
         }
@@ -26,870 +24,331 @@
     }
   </script>
 
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <!-- Custom Cyber Styling -->
   <link rel="stylesheet" href="/css/custom.css">
 </head>
-<body class="bg-brand-dark min-h-screen text-slate-100 flex flex-col antialiased selection:bg-brand-emerald selection:text-black">
+<body class="bg-black min-h-screen text-zinc-100 flex flex-col antialiased selection:bg-white selection:text-black">
 
   <!-- ======================================================== -->
-  <!-- TOP INVITATION / REFERRAL NOTIFICATION BANNER            -->
+  <!-- NAVIGATION HEADER                                        -->
   <!-- ======================================================== -->
-  <div id="referral-banner" class="hidden bg-gradient-to-r from-violet-900/90 via-purple-900/90 to-emerald-900/90 border-b border-violet-500/30 px-4 py-2 text-center text-sm font-medium">
-    <div class="max-w-7xl mx-auto flex items-center justify-center gap-3">
-      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-        <i class="fa-solid fa-gift mr-1.5"></i> Special Bonus
-      </span>
-      <span>You were invited by Ambassador: <strong id="inviter-code-badge" class="text-emerald-400 font-mono-num font-bold">CODE</strong>! Create an account to receive <span class="text-emerald-400 font-bold">+100 Welcome Coins</span>.</span>
-      <button onclick="openRegisterModal()" class="ml-2 underline text-white hover:text-emerald-300 text-xs font-bold uppercase tracking-wide">Claim Now &rarr;</button>
-    </div>
-  </div>
-
-  <!-- ======================================================== -->
-  <!-- NAVIGATION BAR                                           -->
-  <!-- ======================================================== -->
-  <header class="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+  <header class="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-zinc-800/80">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       
-      <!-- Brand Logo -->
-      <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('watch')">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-purple-600 to-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/10">
-          <i class="fa-solid fa-play text-white text-lg"></i>
+      <!-- Brand & Main Navigation -->
+      <div class="flex items-center gap-8">
+        <a href="/" class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black font-black text-sm tracking-tighter">
+            RZ
+          </div>
+          <span class="text-base font-bold tracking-tight text-white">REWARDZONE</span>
+        </a>
+
+        <!-- Minimalist Navigation (No Admin Button Anywhere) -->
+        <nav class="hidden md:flex items-center gap-1">
+          <a href="/" class="nav-link active">Overview</a>
+          <a href="/watch" class="nav-link">Watch & Earn</a>
+          <a href="/tasks" class="nav-link">Tasks & Daily</a>
+          <a href="/referrals" class="nav-link">Referrals</a>
+          <a href="/withdraw" class="nav-link">Cashout</a>
+        </nav>
+      </div>
+
+      <!-- User Stats / Authentication Actions -->
+      <div class="flex items-center gap-3">
+        <!-- Logged In Menu -->
+        <div id="header-user-menu" class="hidden items-center gap-3">
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
+            <span class="text-xs text-zinc-400">Balance:</span>
+            <span id="header-coins-balance" class="font-mono-num font-semibold text-sm text-white">0</span>
+            <span class="text-xs text-zinc-500">Coins</span>
+            <span class="text-xs text-zinc-600">&bull;</span>
+            <span id="header-usd-balance" class="font-mono-num font-semibold text-xs text-zinc-300">$0.00</span>
+          </div>
+
+          <div class="flex items-center gap-2 pl-1">
+            <span id="header-username" class="text-xs font-medium text-zinc-300 hidden sm:inline">user</span>
+            <button onclick="handleLogout()" class="px-2.5 py-1.5 rounded-md bg-zinc-900 hover:bg-zinc-800 text-xs text-zinc-400 hover:text-white border border-zinc-800 transition-colors">
+              Sign Out
+            </button>
+          </div>
         </div>
-        <div>
-          <span class="text-xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-emerald-400 bg-clip-text text-transparent">REWARD<span class="text-emerald-400">ZONE</span></span>
-          <span class="text-[10px] block font-mono-num tracking-wider text-violet-400 -mt-1 font-semibold">WATCH &bull; TASK &bull; EARN</span>
+
+        <!-- Guest Actions -->
+        <div id="header-guest-buttons" class="flex items-center gap-2.5">
+          <a href="/login" class="text-xs font-semibold text-zinc-400 hover:text-white px-3 py-1.5 transition-colors">
+            Sign In
+          </a>
+          <a href="/register" class="btn-primary text-xs py-1.5 px-3.5">
+            Get Started
+          </a>
         </div>
       </div>
 
-      <!-- Quick Balance & Status Display (When Logged In) -->
-      <div id="nav-user-stats" class="hidden items-center gap-3 sm:gap-4">
-        <!-- Daily Bonus Quick Button -->
-        <button onclick="handleQuickDailyCheckin()" id="nav-daily-btn" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-xs font-medium text-amber-300 transition-all">
-          <i class="fa-solid fa-gift text-amber-400"></i>
-          <span id="nav-daily-text">Daily Bonus</span>
-        </button>
+    </div>
 
-        <!-- Balance Card -->
-        <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700/80 shadow-inner">
-          <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">
-            <i class="fa-solid fa-coins"></i>
-          </div>
-          <div>
-            <div class="flex items-baseline gap-1.5">
-              <span id="nav-coins-balance" class="font-mono-num font-bold text-white text-base">0</span>
-              <span class="text-[11px] text-slate-400 font-medium">Coins</span>
-            </div>
-          </div>
-          <div class="h-4 w-[1px] bg-slate-700 mx-1"></div>
-          <span id="nav-usd-balance" class="text-xs font-mono-num font-semibold text-emerald-400">$0.00</span>
-        </div>
-
-        <!-- User Profile Pill -->
-        <div class="relative group">
-          <button id="user-menu-btn" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-medium transition-all">
-            <div class="w-6 h-6 rounded-full bg-violet-600/30 text-violet-400 flex items-center justify-center text-xs font-bold font-mono-num" id="user-avatar-initial">
-              U
-            </div>
-            <span id="nav-username" class="max-w-[100px] truncate text-slate-200">User</span>
-            <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
-          </button>
-
-          <!-- Dropdown Menu -->
-          <div class="absolute right-0 mt-2 w-48 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl py-2 hidden group-hover:block transition-all z-50">
-            <div class="px-4 py-2 border-b border-slate-800 text-xs text-slate-400">
-              Signed in as <strong id="dropdown-username" class="text-white block truncate">user</strong>
-            </div>
-            <a href="#referrals" onclick="switchTab('referrals')" class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
-              <i class="fa-solid fa-users text-violet-400 w-4"></i> Referral Hub
-            </a>
-            <a href="#withdraw" onclick="switchTab('withdraw')" class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
-              <i class="fa-solid fa-wallet text-emerald-400 w-4"></i> Cashout Funds
-            </a>
-            <a href="#history" onclick="switchTab('history')" class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
-              <i class="fa-solid fa-clock-rotate-left text-cyan-400 w-4"></i> Activity Log
-            </a>
-            <div id="admin-menu-link" class="hidden border-t border-slate-800 mt-1 pt-1">
-              <a href="/admin" class="flex items-center gap-2.5 px-4 py-2 text-sm text-amber-400 hover:bg-slate-800 font-semibold">
-                <i class="fa-solid fa-shield-halved w-4"></i> Admin Panel
-              </a>
-            </div>
-            <div class="border-t border-slate-800 mt-1 pt-1">
-              <button onclick="handleLogout()" class="w-full text-left flex items-center gap-2.5 px-4 py-2 text-sm text-rose-400 hover:bg-slate-800">
-                <i class="fa-solid fa-right-from-bracket w-4"></i> Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Auth Action Buttons (When Logged Out) -->
-      <div id="nav-guest-actions" class="flex items-center gap-3">
-        <button onclick="openLoginModal()" class="px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors">
-          Sign In
-        </button>
-        <button onclick="openRegisterModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-emerald-600 hover:from-violet-500 hover:to-emerald-500 text-white text-sm font-bold shadow-lg shadow-violet-600/20 hover:shadow-violet-600/40 transition-all">
-          Get Started +100 Coins
-        </button>
-      </div>
-
+    <!-- Mobile Navigation Subbar -->
+    <div class="md:hidden border-t border-zinc-900 px-4 py-2 flex items-center justify-between gap-1 overflow-x-auto text-xs">
+      <a href="/" class="nav-link active py-1 px-2.5">Overview</a>
+      <a href="/watch" class="nav-link py-1 px-2.5">Watch</a>
+      <a href="/tasks" class="nav-link py-1 px-2.5">Tasks</a>
+      <a href="/referrals" class="nav-link py-1 px-2.5">Referrals</a>
+      <a href="/withdraw" class="nav-link py-1 px-2.5">Cashout</a>
     </div>
   </header>
 
   <!-- ======================================================== -->
-  <!-- TAB NAVIGATION BAR                                       -->
-  <!-- ======================================================== -->
-  <nav class="bg-slate-900/50 border-b border-slate-800/80 px-4">
-    <div class="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto py-2.5 no-scrollbar">
-      <button onclick="switchTab('watch')" id="tab-btn-watch" class="nav-tab active flex items-center gap-2 px-4 py-2 rounded-xl border border-transparent text-sm font-semibold text-slate-300 transition-all whitespace-nowrap">
-        <i class="fa-solid fa-tv text-emerald-400"></i> Watch & Earn
-      </button>
-      <button onclick="switchTab('offerwalls')" id="tab-btn-offerwalls" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl border border-transparent text-sm font-semibold text-slate-300 transition-all whitespace-nowrap">
-        <i class="fa-solid fa-layer-group text-violet-400"></i> Offerwalls & Tasks
-      </button>
-      <button onclick="switchTab('daily')" id="tab-btn-daily" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl border border-transparent text-sm font-semibold text-slate-300 transition-all whitespace-nowrap">
-        <i class="fa-solid fa-calendar-check text-amber-400"></i> Daily Bonus
-      </button>
-      <button onclick="switchTab('referrals')" id="tab-btn-referrals" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl border border-transparent text-sm font-semibold text-slate-300 transition-all whitespace-nowrap">
-        <i class="fa-solid fa-users text-cyan-400"></i> Referral Hub (10%)
-      </button>
-      <button onclick="switchTab('withdraw')" id="tab-btn-withdraw" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl border border-transparent text-sm font-semibold text-slate-300 transition-all whitespace-nowrap">
-        <i class="fa-solid fa-money-bill-transfer text-emerald-400"></i> Cashout / Withdraw
-      </button>
-      <button onclick="switchTab('history')" id="tab-btn-history" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl border border-transparent text-sm font-semibold text-slate-300 transition-all whitespace-nowrap">
-        <i class="fa-solid fa-clock-rotate-left text-slate-400"></i> Activity
-      </button>
-      <div class="ml-auto pl-4">
-        <a href="/admin" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-semibold whitespace-nowrap">
-          <i class="fa-solid fa-screwdriver-wrench"></i> Admin Dashboard
-        </a>
-      </div>
-    </div>
-  </nav>
-
-  <!-- ======================================================== -->
   <!-- MAIN CONTENT CONTAINER                                   -->
   <!-- ======================================================== -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-10 space-y-12">
 
-    <!-- ==================================================== -->
-    <!-- TAB 1: WATCH TO EARN (VIDEO PORTAL)                  -->
-    <!-- ==================================================== -->
-    <section id="tab-watch" class="space-y-6">
-      <!-- Hero / Platform Banner -->
-      <div class="relative overflow-hidden rounded-2xl glass-card p-6 sm:p-8 border border-slate-700/60">
-        <div class="absolute -right-10 -bottom-10 w-80 h-80 bg-violet-600/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute right-40 -top-10 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        
-        <div class="relative z-10 max-w-3xl">
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold mb-3">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            Verified Crypto Reward Streams &bull; Instant Coin Credits
-          </div>
-          <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight">
-            Watch Short Crypto Videos, <span class="bg-gradient-to-r from-emerald-400 to-violet-400 bg-clip-text text-transparent">Get Real Crypto Payouts</span>
-          </h1>
-          <p class="mt-2 text-slate-300 text-sm sm:text-base leading-relaxed">
-            Select an available stream below. Watch until the anti-cheat verification countdown finishes and claim your coins instantly. Convert 1,000 Coins to $1.00 USD paid in USDT, LTC, or Solana.
-          </p>
-
-          <div class="mt-5 flex flex-wrap gap-4 text-xs font-medium text-slate-400">
-            <div class="flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-emerald-400"></i> Anti-Cheat Active Tab Verification</div>
-            <div class="flex items-center gap-1.5"><i class="fa-solid fa-arrows-rotate text-violet-400"></i> Refreshes Every 24 Hours</div>
-            <div class="flex items-center gap-1.5"><i class="fa-solid fa-bolt text-amber-400"></i> Instant Server Validation</div>
-          </div>
-        </div>
+    <!-- Guest Hero Section (Shown when logged out) -->
+    <section id="guest-hero" class="text-center py-12 sm:py-20 border-b border-zinc-900">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-400 mb-6">
+        <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+        1,000 Coins = $1.00 USD &bull; Zero Withdrawal Fees
       </div>
 
-      <!-- Video Stream Grid -->
-      <div>
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h2 class="text-xl font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-film text-violet-400"></i> Available Video Streams
-            </h2>
-            <p class="text-xs text-slate-400">Complete tasks to claim coins. Available once every 24 hours per task.</p>
-          </div>
-          <button onclick="loadVideoTasks()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 flex items-center gap-1.5">
-            <i class="fa-solid fa-rotate text-slate-400"></i> Refresh
-          </button>
+      <h1 class="text-4xl sm:text-6xl font-black tracking-tight max-w-3xl mx-auto gradient-heading leading-tight sm:leading-none">
+        Watch streams. Complete tasks. Earn real crypto.
+      </h1>
+
+      <p class="mt-5 text-sm sm:text-base text-zinc-400 max-w-xl mx-auto leading-relaxed">
+        A high-efficiency rewards portal built on active-tab anti-cheat verification. Earn coins by viewing partner video streams, daily check-ins, and CPA offers. Cash out directly to USDT, LTC, or SOL.
+      </p>
+
+      <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a href="/register" class="btn-primary w-full sm:w-auto px-6 py-2.5 text-sm">
+          Create Account & Claim +100 Coins
+        </a>
+        <a href="/login" class="btn-secondary w-full sm:w-auto px-6 py-2.5 text-sm">
+          Sign In
+        </a>
+      </div>
+
+      <!-- Feature Matrix -->
+      <div class="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+        <div class="mono-card p-5">
+          <div class="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Verified Streams</div>
+          <h3 class="text-base font-semibold text-white">Watch to Earn</h3>
+          <p class="text-xs text-zinc-400 mt-1 leading-relaxed">
+            Short, educational crypto and tech videos. Our anti-cheat engine monitors focus so you are credited reliably.
+          </p>
         </div>
 
-        <div id="video-tasks-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <!-- Rendered dynamically by app.js -->
-          <div class="glass-card p-6 rounded-2xl animate-pulse text-center">
-            <div class="h-32 bg-slate-800 rounded-xl mb-4"></div>
-            <div class="h-4 bg-slate-800 rounded w-3/4 mx-auto mb-2"></div>
-            <div class="h-3 bg-slate-800 rounded w-1/2 mx-auto"></div>
-          </div>
+        <div class="mono-card p-5">
+          <div class="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Passive Growth</div>
+          <h3 class="text-base font-semibold text-white">10% Referral Engine</h3>
+          <p class="text-xs text-zinc-400 mt-1 leading-relaxed">
+            Invite partners with your personal link. Earn an automated 10% commission on every video and task completed.
+          </p>
+        </div>
+
+        <div class="mono-card p-5">
+          <div class="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Instant Payouts</div>
+          <h3 class="text-base font-semibold text-white">Direct Crypto Cashouts</h3>
+          <p class="text-xs text-zinc-400 mt-1 leading-relaxed">
+            Cash out in USDT (BEP20 / TRC20), Litecoin, or Solana starting from just 5,000 Coins ($5.00 USD).
+          </p>
         </div>
       </div>
     </section>
 
-    <!-- ==================================================== -->
-    <!-- TAB 2: CPA OFFERWALLS & TASKS                        -->
-    <!-- ==================================================== -->
-    <section id="tab-offerwalls" class="hidden space-y-6">
-      <div class="glass-card rounded-2xl p-6 sm:p-8 border border-slate-700/60">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6 mb-6">
+    <!-- Logged In Overview Dashboard (Shown when logged in) -->
+    <section id="user-dashboard" class="hidden space-y-8">
+      
+      <!-- User Summary Banner -->
+      <div class="mono-card p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div>
+          <span class="text-xs font-mono text-zinc-500 uppercase tracking-wider">Account Overview</span>
+          <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">
+            Welcome back, <span id="dash-username" class="text-zinc-200">user</span>
+          </h2>
+          <p class="text-xs text-zinc-400 mt-1">
+            Your earnings update in real-time across all devices.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <a href="/watch" class="btn-primary text-xs py-2 px-4">
+            Watch Streams
+          </a>
+          <a href="/withdraw" class="btn-secondary text-xs py-2 px-4">
+            Cashout
+          </a>
+        </div>
+      </div>
+
+      <!-- KPI Metrics Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="mono-card p-5">
+          <span class="text-xs font-semibold text-zinc-400 block mb-1">Coin Balance</span>
+          <div id="dash-balance-coins" class="text-2xl font-black font-mono-num text-white">0</div>
+          <span id="dash-balance-usd" class="text-xs text-zinc-500 font-mono-num mt-1 block">$0.00 USD</span>
+        </div>
+
+        <div class="mono-card p-5">
+          <span class="text-xs font-semibold text-zinc-400 block mb-1">Total Earned</span>
+          <div id="dash-total-earned" class="text-2xl font-black font-mono-num text-white">0</div>
+          <span class="text-xs text-zinc-500 font-mono-num mt-1 block">All-time coins</span>
+        </div>
+
+        <div class="mono-card p-5">
+          <span class="text-xs font-semibold text-zinc-400 block mb-1">Total Referrals</span>
+          <div id="dash-referrals-count" class="text-2xl font-black font-mono-num text-white">0</div>
+          <span id="dash-referral-earnings" class="text-xs text-zinc-500 font-mono-num mt-1 block">0 commission coins</span>
+        </div>
+
+        <div class="mono-card p-5">
+          <span class="text-xs font-semibold text-zinc-400 block mb-1">Completed Tasks</span>
+          <div id="dash-tasks-count" class="text-2xl font-black font-mono-num text-white">0</div>
+          <span class="text-xs text-zinc-500 font-mono-num mt-1 block">Streams & offers</span>
+        </div>
+      </div>
+
+      <!-- Quick Action Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="/watch" class="mono-card mono-card-interactive p-6 flex flex-col justify-between group">
           <div>
-            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-500/20 text-violet-300 border border-violet-500/30 mb-2">
-              <i class="fa-solid fa-bolt"></i> High Payout CPA Engine
-            </div>
-            <h2 class="text-2xl font-bold text-white">Offerwalls & Instant Tasks</h2>
-            <p class="text-sm text-slate-400 mt-1">Complete mobile app installs, quick surveys, and partner signups to earn massive coins.</p>
-          </div>
-          
-          <div class="flex items-center gap-3">
-            <div class="px-4 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-right">
-              <span class="text-xs text-slate-400 block">Your SubID / User ID</span>
-              <strong id="offerwall-user-id" class="text-sm font-mono-num text-emerald-400 font-bold">#GUEST</strong>
-            </div>
-          </div>
-        </div>
-
-        <!-- Offerwall Network Selector Tabs -->
-        <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
-          <button class="px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold shadow-md shadow-violet-600/20">
-            CPALead Network
-          </button>
-          <button class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700">
-            TimeWall / Lootably
-          </button>
-          <button class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700">
-            Adscend Media
-          </button>
-        </div>
-
-        <!-- ======================================================== -->
-        <!-- DROP YOUR CPALEAD / TIMEWALL / LOOTABLY IFRAME URL HERE  -->
-        <!-- The user ID is dynamically bound to the iframe src.     -->
-        <!-- ======================================================== -->
-        <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 min-h-[600px] relative">
-          <!-- Placeholder simulator container so it works cleanly out of the box -->
-          <div id="offerwall-iframe-wrapper" class="w-full h-[600px] flex flex-col items-center justify-center p-6 text-center">
-            
-            <div class="w-16 h-16 rounded-2xl bg-violet-600/20 text-violet-400 flex items-center justify-center text-2xl mb-4 border border-violet-500/30">
-              <i class="fa-solid fa-gamepad"></i>
-            </div>
-            <h3 class="text-xl font-bold text-white mb-2">Offerwall Iframe Container Ready</h3>
-            <p class="text-sm text-slate-400 max-w-lg mb-6">
-              Paste your affiliate network iframe URL inside <code class="text-emerald-400 bg-slate-900 px-2 py-0.5 rounded font-mono-num">public/index.html</code>. Your logged-in User ID (<span id="offerwall-subid-label" class="text-violet-400 font-bold">1</span>) is automatically bound to the SubID parameter.
+            <span class="text-xs font-mono text-zinc-500 uppercase tracking-wider block mb-1">Stream Portal</span>
+            <h3 class="text-lg font-bold text-white group-hover:text-zinc-200">Watch & Earn</h3>
+            <p class="text-xs text-zinc-400 mt-2">
+              Browse available video streams. Complete the anti-cheat timer to earn coins immediately.
             </p>
-
-            <!-- Interactive Sample Offer Cards (Allows earning test coins right away) -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl text-left mb-6">
-              <div class="glass-card p-4 rounded-xl border border-slate-800 hover:border-violet-500/50 transition-all">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-xs font-bold text-violet-400">App Install</span>
-                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">+1,200 Coins</span>
-                </div>
-                <h4 class="font-bold text-sm text-white">Crypto Wallet App</h4>
-                <p class="text-xs text-slate-400 mt-1 mb-3">Install & create a free account.</p>
-                <button onclick="simulateOfferwallPostback(1200, 'Crypto Wallet Install')" class="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-600 text-white text-xs font-semibold transition-all">
-                  Complete Offer
-                </button>
-              </div>
-
-              <div class="glass-card p-4 rounded-xl border border-slate-800 hover:border-violet-500/50 transition-all">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-xs font-bold text-amber-400">Quick Survey</span>
-                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">+450 Coins</span>
-                </div>
-                <h4 class="font-bold text-sm text-white">Consumer Tech Poll</h4>
-                <p class="text-xs text-slate-400 mt-1 mb-3">Answer 5 multiple choice questions.</p>
-                <button onclick="simulateOfferwallPostback(450, 'Consumer Survey')" class="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-600 text-white text-xs font-semibold transition-all">
-                  Complete Offer
-                </button>
-              </div>
-
-              <div class="glass-card p-4 rounded-xl border border-slate-800 hover:border-violet-500/50 transition-all">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-xs font-bold text-cyan-400">Free Trial</span>
-                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">+2,500 Coins</span>
-                </div>
-                <h4 class="font-bold text-sm text-white">Web3 VPN Security</h4>
-                <p class="text-xs text-slate-400 mt-1 mb-3">Start 7-day trial subscription.</p>
-                <button onclick="simulateOfferwallPostback(2500, 'Web3 VPN Trial')" class="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-600 text-white text-xs font-semibold transition-all">
-                  Complete Offer
-                </button>
-              </div>
-            </div>
-
-            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-400 max-w-xl text-left">
-              <div class="font-bold text-slate-300 mb-1 flex items-center gap-1.5">
-                <i class="fa-solid fa-code text-emerald-400"></i> S2S Postback Integration Webhook:
-              </div>
-              <code class="text-emerald-400 font-mono-num break-all">GET /api/postback?userid={subid}&payout={payout}&txid={tx_id}&sig={signature}</code>
-            </div>
-
           </div>
-        </div>
+          <span class="text-xs font-medium text-white mt-4 inline-flex items-center gap-1">
+            Open Streams &rarr;
+          </span>
+        </a>
 
-      </div>
-    </section>
-
-    <!-- ==================================================== -->
-    <!-- TAB 3: DAILY BONUS (24H COOLDOWN)                    -->
-    <!-- ==================================================== -->
-    <section id="tab-daily" class="hidden space-y-6">
-      <div class="max-w-2xl mx-auto glass-card rounded-2xl p-8 border border-slate-700/60 text-center relative overflow-hidden">
-        <div class="absolute -right-20 -top-20 w-60 h-60 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 flex items-center justify-center text-3xl mx-auto mb-4 shadow-xl shadow-amber-500/20">
-          <i class="fa-solid fa-gift"></i>
-        </div>
-
-        <h2 class="text-2xl font-black text-white">Daily Loyalty Reward</h2>
-        <p class="text-slate-300 text-sm mt-1 max-w-md mx-auto">
-          Log in every 24 hours to claim free bonus coins. Keep your streak alive to maximize rewards!
-        </p>
-
-        <div class="my-8 p-6 rounded-2xl bg-slate-900/80 border border-slate-800 max-w-sm mx-auto">
-          <span class="text-xs uppercase font-bold tracking-widest text-slate-400 block mb-1">Today's Reward</span>
-          <div class="flex items-center justify-center gap-2">
-            <span class="text-4xl font-black font-mono-num text-amber-400">+25</span>
-            <span class="text-lg font-bold text-slate-300">Coins</span>
-          </div>
-          <span class="text-xs text-emerald-400 font-mono-num mt-1 block">($0.025 USD value)</span>
-        </div>
-
-        <div id="daily-claim-box">
-          <button id="claim-daily-btn" onclick="handleClaimDailyBonus()" class="px-8 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-base shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 transition-all">
-            <i class="fa-solid fa-hand-holding-dollar mr-2"></i> Claim +25 Coins Now
-          </button>
-          
-          <div id="daily-countdown-wrapper" class="hidden mt-4">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-sm text-slate-300 font-mono-num">
-              <i class="fa-solid fa-hourglass-half text-amber-400"></i> Next claim available in: <strong id="daily-timer" class="text-amber-300 font-bold">23h 59m 59s</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================================================== -->
-    <!-- TAB 4: REFERRAL HUB (10% COMMISSION ENGINE)          -->
-    <!-- ==================================================== -->
-    <section id="tab-referrals" class="hidden space-y-6">
-      
-      <!-- Referral Header Card -->
-      <div class="glass-card rounded-2xl p-6 sm:p-8 border border-slate-700/60 relative overflow-hidden">
-        <div class="absolute -right-20 -top-20 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div class="max-w-3xl">
-          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 mb-3">
-            <i class="fa-solid fa-network-wired"></i> Tiered Commission Engine
-          </div>
-          <h2 class="text-3xl font-black text-white">Invite Friends, Earn 10% For Life</h2>
-          <p class="text-slate-300 text-sm mt-2 leading-relaxed">
-            Share your unique referral link. Whenever your invited partners complete a Video Task or Offerwall Postback, you automatically receive <strong class="text-emerald-400 font-bold">10% of their earnings</strong> credited instantly to your balance!
-          </p>
-        </div>
-
-        <!-- Referral Link Share Box -->
-        <div class="mt-6 p-4 rounded-xl bg-slate-900 border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center gap-3">
-          <div class="flex-1 flex items-center bg-slate-950 px-3.5 py-2.5 rounded-lg border border-slate-800 overflow-hidden">
-            <i class="fa-solid fa-link text-slate-500 mr-2.5 text-sm"></i>
-            <input id="referral-link-input" type="text" readonly value="https://rewardzone.local/?ref=..." class="bg-transparent border-0 text-white font-mono-num text-sm w-full focus:outline-none select-all">
-          </div>
-          <div class="flex items-center gap-2">
-            <button onclick="copyReferralLink()" class="flex-1 md:flex-initial px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all">
-              <i class="fa-solid fa-copy"></i> <span>Copy Link</span>
-            </button>
-            <button onclick="shareOnWhatsApp()" class="px-4 py-2.5 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm font-bold flex items-center justify-center gap-1.5 transition-all" title="Share on WhatsApp">
-              <i class="fa-brands fa-whatsapp text-lg"></i>
-            </button>
-            <button onclick="shareOnTwitter()" class="px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold flex items-center justify-center gap-1.5 border border-slate-700 transition-all" title="Share on X">
-              <i class="fa-brands fa-x-twitter text-base"></i>
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Referral Statistics Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div class="glass-card p-6 rounded-2xl border border-slate-700/60">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold text-slate-400">Total Referrals</span>
-            <div class="w-8 h-8 rounded-lg bg-violet-600/20 text-violet-400 flex items-center justify-center text-sm">
-              <i class="fa-solid fa-users"></i>
-            </div>
-          </div>
-          <div id="stat-referrals-count" class="text-3xl font-black font-mono-num text-white">0</div>
-          <span class="text-xs text-slate-500 mt-1 block">Active recruited members</span>
-        </div>
-
-        <div class="glass-card p-6 rounded-2xl border border-slate-700/60">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold text-slate-400">Referral Earnings</span>
-            <div class="w-8 h-8 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center text-sm">
-              <i class="fa-solid fa-coins"></i>
-            </div>
-          </div>
-          <div id="stat-referrals-earnings" class="text-3xl font-black font-mono-num text-emerald-400">0</div>
-          <span id="stat-referrals-earnings-usd" class="text-xs text-slate-500 mt-1 block">$0.00 USD earned from 10% commission</span>
-        </div>
-
-        <div class="glass-card p-6 rounded-2xl border border-slate-700/60">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold text-slate-400">Your Referral Code</span>
-            <div class="w-8 h-8 rounded-lg bg-cyan-600/20 text-cyan-400 flex items-center justify-center text-sm">
-              <i class="fa-solid fa-fingerprint"></i>
-            </div>
-          </div>
-          <div id="stat-referral-code" class="text-3xl font-black font-mono-num text-cyan-300">------</div>
-          <span class="text-xs text-slate-500 mt-1 block">Share directly with partners</span>
-        </div>
-      </div>
-
-      <!-- Referrals List Table -->
-      <div class="glass-card rounded-2xl border border-slate-700/60 p-6">
-        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <i class="fa-solid fa-list-check text-violet-400"></i> Your Referral Network
-        </h3>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-slate-300">
-            <thead class="bg-slate-900/80 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800">
-              <tr>
-                <th class="px-4 py-3">Partner Username</th>
-                <th class="px-4 py-3">Joined Date</th>
-                <th class="px-4 py-3">Their Total Earned</th>
-                <th class="px-4 py-3">10% Commission Earned</th>
-              </tr>
-            </thead>
-            <tbody id="referrals-table-body" class="divide-y divide-slate-800">
-              <tr>
-                <td colspan="4" class="px-4 py-6 text-center text-slate-500">
-                  No referrals yet. Share your link above to start earning passive commissions!
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-    </section>
-
-    <!-- ==================================================== -->
-    <!-- TAB 5: CASHOUT / CRYPTO WITHDRAWAL                   -->
-    <!-- ==================================================== -->
-    <section id="tab-withdraw" class="hidden space-y-6">
-      
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <!-- Left 2 Cols: Withdrawal Form -->
-        <div class="lg:col-span-2 glass-card rounded-2xl p-6 sm:p-8 border border-slate-700/60">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
-            <div>
-              <h2 class="text-2xl font-bold text-white">Crypto Cashout</h2>
-              <p class="text-xs text-slate-400 mt-1">Withdraw your earnings directly to your personal crypto wallet.</p>
-            </div>
-            <div class="text-right">
-              <span class="text-xs text-slate-400 block">Available Balance</span>
-              <strong id="withdraw-available-coins" class="text-lg font-mono-num text-emerald-400 font-bold">0 Coins</strong>
-              <span id="withdraw-available-usd" class="text-xs text-slate-400 block font-mono-num">($0.00 USD)</span>
-            </div>
-          </div>
-
-          <form id="withdrawal-form" onsubmit="handleWithdrawalSubmit(event)" class="space-y-5">
-            <!-- Crypto Network Selection -->
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                1. Select Crypto Network
-              </label>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <label class="cursor-pointer">
-                  <input type="radio" name="cryptoNetwork" value="USDT-BEP20" checked class="peer sr-only">
-                  <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 text-center transition-all">
-                    <span class="text-xs font-bold text-white block">USDT</span>
-                    <span class="text-[10px] text-slate-400 block">BNB Smart Chain</span>
-                  </div>
-                </label>
-
-                <label class="cursor-pointer">
-                  <input type="radio" name="cryptoNetwork" value="USDT-TRC20" class="peer sr-only">
-                  <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 text-center transition-all">
-                    <span class="text-xs font-bold text-white block">USDT</span>
-                    <span class="text-[10px] text-slate-400 block">TRON (TRC20)</span>
-                  </div>
-                </label>
-
-                <label class="cursor-pointer">
-                  <input type="radio" name="cryptoNetwork" value="LTC" class="peer sr-only">
-                  <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 text-center transition-all">
-                    <span class="text-xs font-bold text-white block">LTC</span>
-                    <span class="text-[10px] text-slate-400 block">Litecoin Native</span>
-                  </div>
-                </label>
-
-                <label class="cursor-pointer">
-                  <input type="radio" name="cryptoNetwork" value="SOL" class="peer sr-only">
-                  <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 text-center transition-all">
-                    <span class="text-xs font-bold text-white block">SOL</span>
-                    <span class="text-[10px] text-slate-400 block">Solana Network</span>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            <!-- Wallet Address -->
-            <div>
-              <label for="withdraw-wallet-addr" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                2. Destination Wallet Address
-              </label>
-              <input type="text" id="withdraw-wallet-addr" required placeholder="Paste your USDT, LTC, or SOL address" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono-num text-sm focus:outline-none focus:border-emerald-500 transition-all">
-            </div>
-
-            <!-- Amount in Coins -->
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <label for="withdraw-amount-coins" class="text-xs font-semibold uppercase tracking-wider text-slate-300">
-                  3. Withdrawal Amount (Coins)
-                </label>
-                <span class="text-xs text-slate-400">Min: <strong class="text-white font-mono-num">5,000 Coins</strong> ($5.00)</span>
-              </div>
-              <div class="relative">
-                <input type="number" id="withdraw-amount-coins" min="5000" step="100" required placeholder="5000" oninput="updateWithdrawalUsdPreview()" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono-num text-base font-bold focus:outline-none focus:border-emerald-500 transition-all">
-                <div class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-mono-num text-emerald-400 font-bold" id="withdraw-usd-preview">
-                  = $5.00 USD
-                </div>
-              </div>
-              <!-- Quick Select Buttons -->
-              <div class="flex items-center gap-2 mt-2">
-                <button type="button" onclick="setWithdrawAmount(5000)" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-mono-num text-slate-300 border border-slate-700">5,000 ($5)</button>
-                <button type="button" onclick="setWithdrawAmount(10000)" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-mono-num text-slate-300 border border-slate-700">10,000 ($10)</button>
-                <button type="button" onclick="setWithdrawAmount(25000)" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-mono-num text-slate-300 border border-slate-700">25,000 ($25)</button>
-                <button type="button" onclick="setMaxWithdrawAmount()" class="px-3 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-xs font-mono-num text-emerald-400 border border-emerald-500/30">MAX ALL</button>
-              </div>
-            </div>
-
-            <!-- Submit Button -->
-            <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-sm tracking-wide uppercase shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/40 transition-all">
-              <i class="fa-solid fa-paper-plane mr-2"></i> Submit Withdrawal Request
-            </button>
-          </form>
-        </div>
-
-        <!-- Right 1 Col: Cashout Rules & Information -->
-        <div class="space-y-6">
-          <div class="glass-card rounded-2xl p-6 border border-slate-700/60">
-            <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2">
-              <i class="fa-solid fa-circle-info text-cyan-400"></i> Cashout Policy
-            </h3>
-            <ul class="text-xs text-slate-300 space-y-2.5 leading-relaxed">
-              <li class="flex items-start gap-2">
-                <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
-                <span><strong>Exchange Rate:</strong> 1,000 Coins = $1.00 USD fixed.</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
-                <span><strong>Minimum Cashout:</strong> 5,000 Coins ($5.00 USD).</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
-                <span><strong>Processing Time:</strong> Reviewed & processed by admin within 12 - 24 hours.</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
-                <span><strong>Zero Hidden Fees:</strong> Network miner transaction fee is covered.</span>
-              </li>
-            </ul>
-          </div>
-
-          <div class="p-5 rounded-2xl bg-violet-950/30 border border-violet-800/40 text-xs text-slate-300">
-            <div class="font-bold text-violet-300 mb-1 flex items-center gap-1.5">
-              <i class="fa-solid fa-shield-halved"></i> Fraud Detection Notice
-            </div>
-            <span>All accounts requesting withdrawals undergo automated anti-cheat audits (IP geolocation, task session elapsed times, and duplicate device checks).</span>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- User Withdrawal History Table -->
-      <div class="glass-card rounded-2xl border border-slate-700/60 p-6">
-        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <i class="fa-solid fa-receipt text-emerald-400"></i> Your Cashout Requests
-        </h3>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-slate-300">
-            <thead class="bg-slate-900/80 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800">
-              <tr>
-                <th class="px-4 py-3">ID</th>
-                <th class="px-4 py-3">Date</th>
-                <th class="px-4 py-3">Network</th>
-                <th class="px-4 py-3">Destination Wallet</th>
-                <th class="px-4 py-3">Amount Coins</th>
-                <th class="px-4 py-3">Amount USD</th>
-                <th class="px-4 py-3">Status</th>
-              </tr>
-            </thead>
-            <tbody id="user-withdrawals-table-body" class="divide-y divide-slate-800">
-              <tr>
-                <td colspan="7" class="px-4 py-6 text-center text-slate-500">
-                  No withdrawal requests yet. Complete tasks to reach the 5,000 Coins threshold!
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-    </section>
-
-    <!-- ==================================================== -->
-    <!-- TAB 6: ACTIVITY & TASK HISTORY                       -->
-    <!-- ==================================================== -->
-    <section id="tab-history" class="hidden space-y-6">
-      <div class="glass-card rounded-2xl border border-slate-700/60 p-6 sm:p-8">
-        <div class="flex items-center justify-between mb-6">
+        <a href="/tasks" class="mono-card mono-card-interactive p-6 flex flex-col justify-between group">
           <div>
-            <h2 class="text-2xl font-bold text-white">Your Earnings Activity</h2>
-            <p class="text-xs text-slate-400 mt-1">Audit log of your recent rewards, video watches, and referral credits.</p>
+            <span class="text-xs font-mono text-zinc-500 uppercase tracking-wider block mb-1">Loyalty & CPA</span>
+            <h3 class="text-lg font-bold text-white group-hover:text-zinc-200">Tasks & Daily Bonus</h3>
+            <p class="text-xs text-zinc-400 mt-2">
+              Claim your +25 Daily Coins every 24 hours, or complete high-payout CPA offers and surveys.
+            </p>
           </div>
-          <button onclick="loadUserHistory()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 flex items-center gap-1.5">
-            <i class="fa-solid fa-rotate text-slate-400"></i> Refresh
-          </button>
+          <span class="text-xs font-medium text-white mt-4 inline-flex items-center gap-1">
+            View Tasks &rarr;
+          </span>
+        </a>
+
+        <a href="/referrals" class="mono-card mono-card-interactive p-6 flex flex-col justify-between group">
+          <div>
+            <span class="text-xs font-mono text-zinc-500 uppercase tracking-wider block mb-1">Partner Network</span>
+            <h3 class="text-lg font-bold text-white group-hover:text-zinc-200">Referral Hub</h3>
+            <p class="text-xs text-zinc-400 mt-2">
+              Get your unique link, share on WhatsApp or X, and earn automated 10% lifetime commissions.
+            </p>
+          </div>
+          <span class="text-xs font-medium text-white mt-4 inline-flex items-center gap-1">
+            Manage Network &rarr;
+          </span>
+        </a>
+      </div>
+
+      <!-- Recent Activity Table -->
+      <div class="mono-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-bold text-white">Recent Earnings Activity</h3>
+          <a href="/watch" class="text-xs text-zinc-400 hover:text-white transition-colors">Start New Task &rarr;</a>
         </div>
 
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-slate-300">
-            <thead class="bg-slate-900/80 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800">
+          <table class="w-full text-left text-xs text-zinc-300">
+            <thead class="border-b border-zinc-800 text-zinc-500 uppercase font-mono">
               <tr>
-                <th class="px-4 py-3">Task Type</th>
-                <th class="px-4 py-3">Details / Reference</th>
-                <th class="px-4 py-3">Date & Time</th>
-                <th class="px-4 py-3">Coins Earned</th>
+                <th class="py-2.5 px-3">Type</th>
+                <th class="py-2.5 px-3">Task Details</th>
+                <th class="py-2.5 px-3">Timestamp</th>
+                <th class="py-2.5 px-3 text-right">Reward</th>
               </tr>
             </thead>
-            <tbody id="user-history-table-body" class="divide-y divide-slate-800">
+            <tbody id="dash-history-tbody" class="divide-y divide-zinc-900">
               <tr>
-                <td colspan="4" class="px-4 py-6 text-center text-slate-500">
-                  Loading activity log...
-                </td>
+                <td colspan="4" class="py-6 text-center text-zinc-600">Loading activity history...</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
+
     </section>
 
   </main>
 
   <!-- ======================================================== -->
-  <!-- MODAL: ANTI-CHEAT "WATCH TO EARN" VIDEO ENGINE           -->
+  <!-- FOOTER                                                   -->
   <!-- ======================================================== -->
-  <div id="video-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-xl hidden flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-    <div class="relative w-full max-w-5xl rounded-2xl glass-card border border-slate-700/80 shadow-2xl p-4 sm:p-6 my-auto">
-      
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
-        <div>
-          <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-            <i class="fa-solid fa-circle-dot animate-pulse"></i> Active Watch Session
-          </span>
-          <h3 id="modal-video-title" class="text-lg sm:text-xl font-bold text-white truncate max-w-md sm:max-w-xl">
-            Bitcoin Fundamentals: How Decentralized Money Works
-          </h3>
-        </div>
-        <button onclick="closeVideoModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-500/20 hover:text-rose-400 text-slate-400 flex items-center justify-center transition-all">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-
-      <!-- ======================================================== -->
-      <!-- ADSTERRA / A-ADS / HILLTOPADS TOP BANNER (728x90) SLOT   -->
-      <!-- ======================================================== -->
-      <div id="ad-banner-top" class="w-full mb-4 rounded-xl overflow-hidden text-center">
-        <!-- Paste your 728x90 or responsive top banner ad script tag below -->
-        <div class="ad-slot-box py-3 px-4 rounded-xl flex items-center justify-between text-xs text-slate-400">
-          <span class="font-mono-num text-[10px] uppercase tracking-wider text-slate-500"><i class="fa-solid fa-rectangle-ad mr-1"></i> Sponsor Slot (728x90)</span>
-          <span class="text-violet-400 font-semibold">&bull; ADSTERRA / A-ADS / HILLTOPADS BANNER PLACEHOLDER &bull;</span>
-          <span class="text-[10px] text-slate-500 font-mono-num">Paste Ad Script Tag Here</span>
-        </div>
-      </div>
-
-      <!-- Main Video Grid Layout: Video Left, Ads & Controls Right -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        
-        <!-- Video Player Left 2 Cols -->
-        <div class="lg:col-span-2 space-y-4">
-          <div class="video-responsive-container bg-black shadow-2xl border border-slate-800">
-            <iframe id="modal-video-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-          </div>
-
-          <!-- Sponsor Visit Button (if ad_direct_link present) -->
-          <div id="modal-sponsor-link-box" class="hidden">
-            <a id="modal-sponsor-link-btn" href="#" target="_blank" rel="noopener noreferrer" class="w-full py-2 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center justify-center gap-2 border border-slate-700 transition-all">
-              <i class="fa-solid fa-arrow-up-right-from-square text-emerald-400"></i> Visit Official Sponsor Website &rarr;
-            </a>
-          </div>
-        </div>
-
-        <!-- Anti-Cheat Countdown Card & Sidebar Ad (Right 1 Col) -->
-        <div class="space-y-4">
-          
-          <!-- Anti-Cheat Timer Status Card -->
-          <div class="glass-card p-5 rounded-xl border border-slate-700/80 text-center">
-            <span class="text-xs uppercase font-bold tracking-wider text-slate-400 block mb-2">Watch Timer Status</span>
-
-            <!-- Tab Inactive Warning Alert -->
-            <div id="tab-inactive-warning" class="hidden p-3 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold mb-3 pulse-warning">
-              <i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Tab Inactive - Timer Paused! Stay on this tab to earn coins.
-            </div>
-
-            <!-- Big Timer Display -->
-            <div class="my-2">
-              <span id="countdown-display" class="font-mono-num font-black text-5xl text-emerald-400 tracking-tight">00:30</span>
-            </div>
-
-            <!-- Progress Bar -->
-            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden my-3">
-              <div id="timer-progress-bar" class="bg-gradient-to-r from-violet-500 to-emerald-400 h-full transition-all duration-300" style="width: 0%"></div>
-            </div>
-
-            <!-- Reward Label -->
-            <div class="text-xs text-slate-300 mb-4">
-              Reward: <strong id="modal-reward-display" class="text-emerald-400 font-bold font-mono-num">+50 Coins</strong>
-            </div>
-
-            <!-- Claim Button (Enabled when timer reaches 0) -->
-            <button id="claim-video-btn" disabled onclick="handleClaimVideoReward()" class="w-full py-3 rounded-xl bg-slate-800 text-slate-500 font-black text-sm uppercase tracking-wider cursor-not-allowed transition-all">
-              <i class="fa-solid fa-lock mr-2"></i> Complete Timer To Claim
-            </button>
-          </div>
-
-          <!-- ======================================================== -->
-          <!-- ADSTERRA / A-ADS / HILLTOPADS SIDEBAR BANNER (300x250)   -->
-          <!-- ======================================================== -->
-          <div id="ad-banner-sidebar" class="w-full rounded-xl overflow-hidden">
-            <!-- Paste your 300x250 sidebar banner ad script tag below -->
-            <div class="ad-slot-box p-6 rounded-xl text-center text-xs text-slate-400 flex flex-col items-center justify-center min-h-[200px]">
-              <i class="fa-solid fa-ad text-2xl text-slate-600 mb-2"></i>
-              <span class="font-semibold text-slate-300">SIDEBAR BANNER (300x250)</span>
-              <span class="text-[10px] text-slate-500 mt-1 font-mono-num">Paste Adsterra / A-Ads Tag Here</span>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ======================================================== -->
-  <!-- MODAL: LOGIN                                             -->
-  <!-- ======================================================== -->
-  <div id="login-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="w-full max-w-md rounded-2xl glass-card border border-slate-700 p-6 sm:p-8 shadow-2xl relative">
-      <button onclick="closeLoginModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-
-      <div class="text-center mb-6">
-        <div class="w-12 h-12 rounded-xl bg-violet-600/20 text-violet-400 flex items-center justify-center text-xl mx-auto mb-2 border border-violet-500/30">
-          <i class="fa-solid fa-right-to-bracket"></i>
-        </div>
-        <h3 class="text-2xl font-bold text-white">Welcome Back</h3>
-        <p class="text-xs text-slate-400 mt-1">Sign in to your RewardZone account to watch and earn</p>
-      </div>
-
-      <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Username or Email</label>
-          <input type="text" id="login-identifier" required class="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-violet-500">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
-          <input type="password" id="login-password" required class="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-violet-500">
-        </div>
-
-        <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-emerald-600 hover:from-violet-500 hover:to-emerald-500 text-white font-bold text-sm shadow-lg shadow-violet-600/20 transition-all">
-          Sign In
-        </button>
-      </form>
-
-
-
-      <div class="text-center mt-4 text-xs text-slate-400">
-        Don't have an account? <button onclick="closeLoginModal(); openRegisterModal();" class="text-emerald-400 font-semibold hover:underline">Register now</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ======================================================== -->
-  <!-- MODAL: REGISTER                                          -->
-  <!-- ======================================================== -->
-  <div id="register-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="w-full max-w-md rounded-2xl glass-card border border-slate-700 p-6 sm:p-8 shadow-2xl relative">
-      <button onclick="closeRegisterModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-
-      <div class="text-center mb-6">
-        <div class="w-12 h-12 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center text-xl mx-auto mb-2 border border-emerald-500/30">
-          <i class="fa-solid fa-user-plus"></i>
-        </div>
-        <h3 class="text-2xl font-bold text-white">Create Account</h3>
-        <p class="text-xs text-slate-400 mt-1">Get +100 Coins Welcome Bonus instantly upon signup</p>
-      </div>
-
-      <form onsubmit="handleRegisterSubmit(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Username</label>
-          <input type="text" id="reg-username" required minlength="3" maxlength="20" placeholder="e.g. cryptomaster" class="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-emerald-500">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
-          <input type="email" id="reg-email" required placeholder="you@example.com" class="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-emerald-500">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
-          <input type="password" id="reg-password" required minlength="6" placeholder="Min. 6 characters" class="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-emerald-500">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Referral Code (Optional)</label>
-          <input type="text" id="reg-refcode" placeholder="e.g. DEMO99" class="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-emerald-400 font-mono-num font-bold text-sm focus:outline-none focus:border-emerald-500">
-          <span id="reg-ref-indicator" class="text-[11px] text-emerald-400 mt-1 hidden"></span>
-        </div>
-
-        <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all">
-          Create Account & Claim +100 Coins
-        </button>
-      </form>
-
-      <div class="text-center mt-4 text-xs text-slate-400">
-        Already have an account? <button onclick="closeRegisterModal(); openLoginModal();" class="text-emerald-400 font-semibold hover:underline">Sign In</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Notification Container -->
-  <div id="toast-container"></div>
-
-  <!-- Footer -->
-  <footer class="bg-slate-950 border-t border-slate-900 py-6 text-center text-xs text-slate-500">
-    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+  <footer class="border-t border-zinc-900 py-6 text-xs text-zinc-500 mt-auto">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div>
-        &copy; 2026 RewardZone. All rights reserved. 1,000 Coins = $1.00 USD.
+        &copy; 2026 RewardZone. 1,000 Coins = $1.00 USD.
       </div>
-      <div class="flex items-center gap-4 text-slate-400">
-        <a href="/admin" class="hover:text-emerald-400 transition-colors"><i class="fa-solid fa-lock mr-1"></i> Admin</a>
+      <div class="flex items-center gap-4 text-zinc-400">
+        <span>Active Tab Verification</span>
         <span>&bull;</span>
-        <span>Anti-Cheat Verified</span>
+        <span>Universal S2S Webhook</span>
         <span>&bull;</span>
-        <span>S2S Webhook Enabled</span>
+        <span>Zero Hidden Fees</span>
       </div>
     </div>
   </footer>
 
-  <!-- Application Logic -->
-  <script src="/js/app.js"></script>
+  <!-- Scripts -->
+  <script src="/js/common.js"></script>
+  <script>
+    function onUserLoaded(user) {
+      document.getElementById('guest-hero').classList.add('hidden');
+      document.getElementById('user-dashboard').classList.remove('hidden');
+
+      document.getElementById('dash-username').textContent = user.username;
+      document.getElementById('dash-balance-coins').textContent = (user.balance_coins || 0).toLocaleString();
+      document.getElementById('dash-balance-usd').textContent = `$${((user.balance_coins || 0) / 1000).toFixed(2)} USD`;
+      document.getElementById('dash-total-earned').textContent = (user.total_earned || 0).toLocaleString();
+      document.getElementById('dash-referrals-count').textContent = user.referrals_count || 0;
+      document.getElementById('dash-referral-earnings').textContent = `${(user.referral_earnings || 0).toLocaleString()} commission coins`;
+      document.getElementById('dash-tasks-count').textContent = user.completed_tasks_count || 0;
+
+      loadDashboardHistory();
+    }
+
+    function onUserLoggedOut() {
+      document.getElementById('guest-hero').classList.remove('hidden');
+      document.getElementById('user-dashboard').classList.add('hidden');
+    }
+
+    async function loadDashboardHistory() {
+      const token = localStorage.getItem('rewardzone_token');
+      try {
+        const res = await fetch('/api/user/history', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        const data = await res.json();
+        const tbody = document.getElementById('dash-history-tbody');
+        if (!tbody) return;
+
+        if (!data.history || data.history.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-zinc-600">No activity logged yet. Visit Watch & Earn to begin!</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = data.history.slice(0, 8).map(item => `
+          <tr class="hover:bg-zinc-900/50">
+            <td class="py-2.5 px-3">
+              <span class="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-300">
+                ${item.task_type}
+              </span>
+            </td>
+            <td class="py-2.5 px-3 font-medium text-white">${item.video_title || 'Completed Action'}</td>
+            <td class="py-2.5 px-3 font-mono text-zinc-500">${new Date(item.created_at).toLocaleString()}</td>
+            <td class="py-2.5 px-3 font-mono font-semibold text-white text-right">+${item.reward_coins}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error('History load error', err);
+      }
+    }
+  </script>
 </body>
 </html>
