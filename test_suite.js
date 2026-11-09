@@ -82,7 +82,8 @@ async function runTests() {
       email: 'invalid-email-format-without-at-sign',
       password: 'Password123!',
       country_code: '+263',
-      phone_number: '771234567'
+      phone_number: '771234567',
+      terms_accepted: 1
     });
     if (badEmailRes.status === 400 && badEmailRes.body.error === 'Please enter a valid email address.') {
       console.log(`   🛡️ STRICT EMAIL CHECK PASSED: Non-email rejected with HTTP 400: "${badEmailRes.body.error}"`);
@@ -90,15 +91,30 @@ async function runTests() {
       throw new Error(`Strict email validation failed! Expected HTTP 400 email error, got: ${JSON.stringify(badEmailRes.body)}`);
     }
 
-    // Register valid user with Country Code (+263) & Phone Number
-    const testUsername = `user_${Date.now()}`;
+    // EULA Acceptance Check (Reject if missing)
+    const noTermsRes = await request('POST', '/api/auth/register', {
+      username: `noterms_${Date.now().toString().slice(-4)}`,
+      email: `noterms_${Date.now()}@example.com`,
+      password: 'Password123!',
+      country_code: '+263',
+      phone_number: '771234567'
+    });
+    if (noTermsRes.status === 400 && (noTermsRes.body.error.includes('Platform Terms of Service') || noTermsRes.body.error.includes('End User License Agreement'))) {
+      console.log(`   🛡️ EULA ENFORCEMENT PASSED: Registration rejected without terms acceptance: "${noTermsRes.body.error}"`);
+    } else {
+      throw new Error(`EULA acceptance check failed! Expected HTTP 400, got: ${JSON.stringify(noTermsRes.body)}`);
+    }
+
+    // Register valid user with Country Code (+263), Phone Number & EULA acceptance
+    const testUsername = `user_${Date.now().toString().slice(-6)}`;
     const regRes = await request('POST', '/api/auth/register', {
       username: testUsername,
       email: `${testUsername}@example.com`,
       password: 'Password123!',
       ref_code: 'DEMO99',
       country_code: '+263',
-      phone_number: '771234567'
+      phone_number: '771234567',
+      terms_accepted: 1
     });
     if (regRes.status !== 201 || !regRes.body.token) {
       throw new Error(`Registration failed: ${JSON.stringify(regRes.body)}`);
@@ -141,7 +157,7 @@ async function runTests() {
     }
 
     // 6. Daily Checkin & Cooldown
-    console.log('6️⃣ Testing Daily Bonus (+25 Coins) & 24h Cooldown...');
+    console.log('6️⃣ Testing Daily Bonus (+25 Coins), 7-Day Consistency Streak & Cooldown...');
     const dailyRes = await request('POST', '/api/tasks/daily-checkin', {}, {
       'Authorization': `Bearer ${userToken}`
     });
@@ -149,6 +165,16 @@ async function runTests() {
       throw new Error(`Daily bonus failed: ${JSON.stringify(dailyRes.body)}`);
     }
     console.log(`   ✅ Daily bonus claimed: +25 Coins. New balance: ${dailyRes.body.newBalance}`);
+
+    // Verify 7-Day Consistency Streak Status
+    const streakStatusRes = await request('GET', '/api/tasks/daily-status', null, {
+      'Authorization': `Bearer ${userToken}`
+    });
+    if (streakStatusRes.status === 200 && streakStatusRes.body.streakList && streakStatusRes.body.streakList.length === 7) {
+      console.log(`   🔥 7-DAY STREAK VERIFIED: Current streak is Day ${streakStatusRes.body.streakDays} with 7-day progression list.`);
+    } else {
+      throw new Error(`Daily streak status failed: ${JSON.stringify(streakStatusRes.body)}`);
+    }
 
     // Try claiming again immediately (should fail)
     const duplicateDailyRes = await request('POST', '/api/tasks/daily-checkin', {}, {
@@ -188,9 +214,18 @@ async function runTests() {
     const expectedCommission = 600;
     const actualIncrease = referrerCheckRes.body.user.balance_coins - demoInitialBalance;
     if (actualIncrease === expectedCommission) {
-      console.log(`   🎉 TIERED COMMISSION ENGINE VERIFIED: Referrer (demouser) received exactly +${actualIncrease} Coins (10% of 6,000)!\n`);
+      console.log(`   🎉 TIERED COMMISSION ENGINE VERIFIED: Referrer (demouser) received exactly +${actualIncrease} Coins (10% of 6,000)!`);
     } else {
       throw new Error(`Referral commission mismatch. Expected +${expectedCommission}, got +${actualIncrease}`);
+    }
+
+    // Test Referral Leaderboard
+    const leaderboardRes = await request('GET', '/api/referrals/leaderboard');
+    if (leaderboardRes.status === 200 && leaderboardRes.body.leaderboard && leaderboardRes.body.leaderboard.length > 0) {
+      const topAmbassador = leaderboardRes.body.leaderboard[0];
+      console.log(`   🏆 REFERRAL LEADERBOARD VERIFIED: Top ambassador ${topAmbassador.username} holds tier ${topAmbassador.tierName} (${topAmbassador.tierBadge}) with ${topAmbassador.referrals} recruits.\n`);
+    } else {
+      throw new Error(`Referral leaderboard failed: ${JSON.stringify(leaderboardRes.body)}`);
     }
 
     // 8. Strict Cashout Gate Testing (100k Coins, 10 Referrals, 10 Hours Watch Time)
@@ -358,7 +393,27 @@ async function runTests() {
     if (tickerRes.status !== 200 || !tickerRes.body.payouts || !tickerRes.body.payouts.length) {
       throw new Error(`Live payout ticker failed: ${JSON.stringify(tickerRes.body)}`);
     }
-    console.log(`   ✅ Live Payout Ticker feed verified: ${tickerRes.body.payouts.length} verified platform cashouts loaded.\n`);
+    console.log(`   ✅ Live Payout Ticker feed verified: ${tickerRes.body.payouts.length} verified platform cashouts loaded.`);
+
+    // Test Admin Telemetry & Registration Audit Logs
+    const telemetryRes = await request('GET', '/api/admin/telemetry', null, {
+      'Authorization': `Bearer ${adminToken}`
+    });
+    if (telemetryRes.status === 200 && telemetryRes.body.logs && telemetryRes.body.logs.length > 0) {
+      console.log(`   📊 TELEMETRY AUDIT VERIFIED: Retrieved ${telemetryRes.body.logs.length} audit logs. Latest event: ${telemetryRes.body.logs[0].event_type} (${telemetryRes.body.logs[0].auth_input}).`);
+    } else {
+      throw new Error(`Telemetry query failed: ${JSON.stringify(telemetryRes.body)}`);
+    }
+
+    // Test Admin Telemetry CSV Export
+    const exportCsvRes = await request('GET', '/api/admin/telemetry/export', null, {
+      'Authorization': `Bearer ${adminToken}`
+    });
+    if (exportCsvRes.status === 200 && typeof exportCsvRes.body === 'string' && exportCsvRes.body.includes('ID,UserID,Username')) {
+      console.log(`   📥 CSV EXPORT VERIFIED: Telemetry CSV exported successfully (${exportCsvRes.body.split('\n').length} lines).\n`);
+    } else {
+      throw new Error(`CSV export failed: ${exportCsvRes.status}`);
+    }
 
     // 11. Multi-Page Application (MPA) Routes & Admin Lockdown
     console.log('1️⃣1️⃣ Testing MPA Routing & Hidden Admin Access Lockdown...');

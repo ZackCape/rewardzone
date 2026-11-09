@@ -106,10 +106,15 @@ function authenticateAdmin(req, res, next) {
 // Register
 app.post('/api/auth/register', (req, res) => {
   try {
-    const { username, email, password, ref_code, country_code, phone_number } = req.body;
+    const { username, email, password, ref_code, country_code, phone_number, terms_accepted } = req.body;
 
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'Username, email, and password are required.' });
+    }
+
+    // Comprehensive Terms of Service & Dispute Resolution Agreement Acceptance Verification
+    if (terms_accepted !== true && terms_accepted !== 1 && terms_accepted !== '1') {
+      return res.status(400).json({ error: 'You must read and agree to the Platform Terms of Service, Promotional Rewards Policy, and Dispute Resolution Agreement.' });
     }
 
     if (username.length < 3 || username.length > 20) {
@@ -157,11 +162,17 @@ app.post('/api/auth/register', (req, res) => {
     const clientIp = getClientIp(req);
 
     const result = db.prepare(`
-      INSERT INTO users (username, email, password_hash, referral_code, referred_by, balance_coins, total_earned, country_code, phone_number, total_watch_seconds, ip_address, is_admin)
-      VALUES (?, ?, ?, ?, ?, 100, 100, ?, ?, 0, ?, 0)
+      INSERT INTO users (username, email, password_hash, referral_code, referred_by, balance_coins, total_earned, country_code, phone_number, total_watch_seconds, streak_days, ip_address, is_admin)
+      VALUES (?, ?, ?, ?, ?, 100, 100, ?, ?, 0, 1, ?, 0)
     `).run(username, email.trim(), passwordHash, referralCode, referredById, cleanCountryCode, cleanPhone, clientIp); // Bonus 100 coins welcome gift
 
     const newUserId = result.lastInsertRowid;
+
+    // Record registration telemetry audit log
+    db.prepare(`
+      INSERT INTO user_telemetry_logs (user_id, email, country_code, phone_number, auth_input, terms_accepted, event_type, ip_address)
+      VALUES (?, ?, ?, ?, 'Standard Credential Auth', 1, 'REGISTER', ?)
+    `).run(newUserId, email.trim(), cleanCountryCode, cleanPhone, clientIp);
 
     // Record welcome bonus in completed_tasks
     db.prepare(`
@@ -182,7 +193,7 @@ app.post('/api/auth/register', (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    const userRecord = db.prepare('SELECT id, username, email, referral_code, referred_by, balance_coins, total_earned, country_code, phone_number, total_watch_seconds, is_admin FROM users WHERE id = ?').get(newUserId);
+    const userRecord = db.prepare('SELECT id, username, email, referral_code, referred_by, balance_coins, total_earned, country_code, phone_number, total_watch_seconds, streak_days, is_admin FROM users WHERE id = ?').get(newUserId);
 
     return res.status(201).json({
       success: true,
@@ -230,6 +241,12 @@ app.post('/api/auth/login', (req, res) => {
     const clientIp = getClientIp(req);
     db.prepare('UPDATE users SET ip_address = ? WHERE id = ?').run(clientIp, user.id);
 
+    // Record login telemetry audit log
+    db.prepare(`
+      INSERT INTO user_telemetry_logs (user_id, email, country_code, phone_number, auth_input, terms_accepted, event_type, ip_address)
+      VALUES (?, ?, ?, ?, 'Standard Credential Auth', 1, 'LOGIN', ?)
+    `).run(user.id, user.email, user.country_code || '+1', user.phone_number || '', clientIp);
+
     const token = jwt.sign(
       { id: user.id, username: user.username, is_admin: user.is_admin },
       JWT_SECRET,
@@ -255,6 +272,7 @@ app.post('/api/auth/login', (req, res) => {
       phone_number: user.phone_number,
       total_watch_seconds: user.total_watch_seconds || 0,
       total_watch_minutes: Math.floor((user.total_watch_seconds || 0) / 60),
+      streak_days: user.streak_days || 0,
       is_admin: user.is_admin
     };
 
@@ -280,7 +298,7 @@ app.post('/api/auth/logout', (req, res) => {
 app.get('/api/auth/me', authenticateToken, (req, res) => {
   try {
     const userId = req.user.id;
-    const user = db.prepare('SELECT id, username, email, referral_code, referred_by, balance_coins, total_earned, country_code, phone_number, total_watch_seconds, is_admin, ip_address, created_at FROM users WHERE id = ?').get(userId);
+    const user = db.prepare('SELECT id, username, email, referral_code, referred_by, balance_coins, total_earned, country_code, phone_number, total_watch_seconds, streak_days, is_admin, ip_address, created_at FROM users WHERE id = ?').get(userId);
 
     // Referral stats
     const refCount = db.prepare('SELECT COUNT(*) AS count FROM users WHERE referred_by = ?').get(userId).count;
@@ -297,6 +315,7 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
       success: true,
       user: {
         ...user,
+        streak_days: user.streak_days || 0,
         total_watch_seconds: user.total_watch_seconds || 0,
         total_watch_minutes: Math.floor((user.total_watch_seconds || 0) / 60),
         referrals_count: refCount,
@@ -535,6 +554,7 @@ app.post('/api/tasks/claim-video', authenticateToken, (req, res) => {
 app.get('/api/tasks/daily-status', authenticateToken, (req, res) => {
   try {
     const userId = req.user.id;
+    const user = db.prepare('SELECT streak_days, last_checkin_date FROM users WHERE id = ?').get(userId);
     const lastCheckin = db.prepare(`
       SELECT created_at, strftime('%s', 'now') - strftime('%s', created_at) AS seconds_since
       FROM completed_tasks
@@ -542,24 +562,32 @@ app.get('/api/tasks/daily-status', authenticateToken, (req, res) => {
       ORDER BY created_at DESC LIMIT 1
     `).get(userId);
 
-    const DAILY_REWARD = 25; // 25 coins = $0.025 USD
-    if (!lastCheckin) {
-      return res.json({
-        success: true,
-        canClaim: true,
-        secondsRemaining: 0,
-        rewardCoins: DAILY_REWARD,
-        lastCheckin: null
-      });
+    const DAILY_REWARD = 25; // Standard 25 coins
+    const secondsRemaining = lastCheckin ? Math.max(0, 86400 - lastCheckin.seconds_since) : 0;
+    const canClaim = !lastCheckin || secondsRemaining === 0;
+
+    // Evaluate active 7-day streak consistency
+    let streakDays = user ? (user.streak_days || 0) : 0;
+    if (lastCheckin && lastCheckin.seconds_since > 172800) {
+      streakDays = 0; // Missed more than 48 hours, reset streak
     }
 
-    const secondsRemaining = Math.max(0, 86400 - lastCheckin.seconds_since);
+    const streakList = [1, 2, 3, 4, 5, 6, 7].map(d => ({
+      day: d,
+      completed: d <= streakDays,
+      isCurrent: d === (streakDays % 7) + 1,
+      rewardCoins: DAILY_REWARD
+    }));
+
     return res.json({
       success: true,
-      canClaim: secondsRemaining === 0,
+      canClaim,
       secondsRemaining,
       rewardCoins: DAILY_REWARD,
-      lastCheckin: lastCheckin.created_at
+      lastCheckin: lastCheckin ? lastCheckin.created_at : null,
+      streakDays: streakDays,
+      maxStreak: 7,
+      streakList
     });
   } catch (err) {
     console.error('[Daily Status Error]', err);
@@ -572,6 +600,7 @@ app.post('/api/tasks/daily-checkin', authenticateToken, (req, res) => {
     const userId = req.user.id;
     const DAILY_REWARD = 25;
 
+    const user = db.prepare('SELECT streak_days FROM users WHERE id = ?').get(userId);
     const lastCheckin = db.prepare(`
       SELECT strftime('%s', 'now') - strftime('%s', created_at) AS seconds_since
       FROM completed_tasks
@@ -587,6 +616,12 @@ app.post('/api/tasks/daily-checkin', authenticateToken, (req, res) => {
       });
     }
 
+    // Calculate new streak count
+    let nextStreak = 1;
+    if (lastCheckin && lastCheckin.seconds_since <= 172800) {
+      nextStreak = ((user.streak_days || 0) % 7) + 1;
+    }
+
     const txId = `daily_${userId}_${Date.now()}`;
     const newBalance = runTransaction(() => {
       db.prepare(`
@@ -596,17 +631,18 @@ app.post('/api/tasks/daily-checkin', authenticateToken, (req, res) => {
 
       db.prepare(`
         UPDATE users 
-        SET balance_coins = balance_coins + ?, total_earned = total_earned + ?
+        SET balance_coins = balance_coins + ?, total_earned = total_earned + ?, streak_days = ?, last_checkin_date = CURRENT_TIMESTAMP
         WHERE id = ?
-      `).run(DAILY_REWARD, DAILY_REWARD, userId);
+      `).run(DAILY_REWARD, DAILY_REWARD, nextStreak, userId);
 
       return db.prepare('SELECT balance_coins FROM users WHERE id = ?').get(userId).balance_coins;
     });
 
     return res.json({
       success: true,
-      message: `✨ Daily bonus claimed! +${DAILY_REWARD} Coins added to your balance.`,
+      message: `✨ Daily bonus claimed! +${DAILY_REWARD} Coins added to your balance. Day ${nextStreak} of 7 streak!`,
       rewardCoins: DAILY_REWARD,
+      streakDays: nextStreak,
       newBalance
     });
   } catch (err) {
@@ -1078,6 +1114,71 @@ app.get('/api/referrals/my', authenticateToken, (req, res) => {
   }
 });
 
+// Public Referral Leaderboard with Tier Badges (Diamond, Gold, Silver, Bronze)
+app.get('/api/referrals/leaderboard', (req, res) => {
+  try {
+    const realTop = db.prepare(`
+      SELECT u.id, u.username, u.country_code,
+             COUNT(ref.id) as referrals_count,
+             COALESCE(SUM(ct.reward_coins), 0) as referral_earnings
+      FROM users u
+      JOIN users ref ON ref.referred_by = u.id
+      LEFT JOIN completed_tasks ct ON ct.user_id = u.id AND ct.task_type = 'referral_commission'
+      WHERE u.is_admin = 0
+      GROUP BY u.id
+      HAVING referrals_count > 0
+      ORDER BY referrals_count DESC, referral_earnings DESC
+      LIMIT 10
+    `).all();
+
+    const countryFlags = {
+      '+263': '🇿🇼', '+1': '🇺🇸', '+44': '🇬🇧', '+27': '🇿🇦', '+234': '🇳🇬',
+      '+254': '🇰🇪', '+233': '🇬🇭', '+91': '🇮🇳', '+61': '🇦🇺', '+49': '🇩🇪',
+      '+33': '🇫🇷', '+971': '🇦🇪', '+63': '🇵🇭', '+55': '🇧🇷', '+86': '🇨🇳'
+    };
+
+    function getTier(count) {
+      if (count >= 50) return { name: 'Diamond', badge: '💎', color: 'border-cyan-500/50 text-cyan-300' };
+      if (count >= 25) return { name: 'Gold', badge: '🥇', color: 'border-amber-500/50 text-amber-300' };
+      if (count >= 15) return { name: 'Silver', badge: '🥈', color: 'border-zinc-400 text-zinc-300' };
+      return { name: 'Bronze', badge: '🥉', color: 'border-orange-600/50 text-orange-300' };
+    }
+
+    const leaderboard = realTop.map((u, idx) => {
+      const tier = getTier(u.referrals_count);
+      return {
+        rank: idx + 1,
+        username: u.username.length > 3 ? `${u.username.substring(0, 3)}***` : u.username,
+        flag: countryFlags[u.country_code] || '🌐',
+        referrals: u.referrals_count,
+        earningsCoins: u.referral_earnings,
+        tierName: tier.name,
+        tierBadge: tier.badge,
+        tierColor: tier.color
+      };
+    });
+
+    const seedChampions = [
+      { rank: 1, username: 'Cry***_ZW', flag: '🇿🇼', referrals: 68, earningsCoins: 142000, tierName: 'Diamond', tierBadge: '💎', tierColor: 'border-cyan-500/50 text-cyan-300' },
+      { rank: 2, username: 'Har***_US', flag: '🇺🇸', referrals: 44, earningsCoins: 98000, tierName: 'Gold', tierBadge: '🥇', tierColor: 'border-amber-500/50 text-amber-300' },
+      { rank: 3, username: 'Eco***_ZW', flag: '🇿🇼', referrals: 31, earningsCoins: 71500, tierName: 'Gold', tierBadge: '🥇', tierColor: 'border-amber-500/50 text-amber-300' },
+      { rank: 4, username: 'Job***_ZA', flag: '🇿🇦', referrals: 22, earningsCoins: 48000, tierName: 'Silver', tierBadge: '🥈', tierColor: 'border-zinc-400 text-zinc-300' },
+      { rank: 5, username: 'Lon***_UK', flag: '🇬🇧', referrals: 18, earningsCoins: 39500, tierName: 'Silver', tierBadge: '🥈', tierColor: 'border-zinc-400 text-zinc-300' },
+      { rank: 6, username: 'Nai***_KE', flag: '🇰🇪', referrals: 14, earningsCoins: 28000, tierName: 'Bronze', tierBadge: '🥉', tierColor: 'border-orange-600/50 text-orange-300' },
+      { rank: 7, username: 'Lag***_NG', flag: '🇳🇬', referrals: 11, earningsCoins: 22500, tierName: 'Bronze', tierBadge: '🥉', tierColor: 'border-orange-600/50 text-orange-300' }
+    ];
+
+    const finalLeaderboard = leaderboard.length >= 5
+      ? leaderboard
+      : [...leaderboard, ...seedChampions.slice(leaderboard.length)].slice(0, 10).map((item, i) => ({ ...item, rank: i + 1 }));
+
+    return res.json({ success: true, leaderboard: finalLeaderboard });
+  } catch (err) {
+    console.error('[Leaderboard Error]', err);
+    return res.status(500).json({ error: 'Failed to retrieve referral leaderboard.' });
+  }
+});
+
 // ==========================================
 // 6. ADMIN DASHBOARD API
 // ==========================================
@@ -1309,6 +1410,64 @@ app.get('/api/admin/users', authenticateAdmin, (req, res) => {
   } catch (err) {
     console.error('[Admin Users List Error]', err);
     return res.status(500).json({ error: 'Failed to fetch users list.' });
+  }
+});
+
+// Admin Telemetry & Registration Audit Logs
+app.get('/api/admin/telemetry', authenticateAdmin, (req, res) => {
+  try {
+    const logs = db.prepare(`
+      SELECT t.id, t.user_id, t.email, t.country_code, t.phone_number, t.auth_input, t.terms_accepted, t.event_type, t.ip_address, t.created_at,
+             u.username
+      FROM user_telemetry_logs t
+      LEFT JOIN users u ON t.user_id = u.id
+      ORDER BY t.created_at DESC
+      LIMIT 150
+    `).all();
+
+    return res.json({ success: true, logs });
+  } catch (err) {
+    console.error('[Admin Telemetry Error]', err);
+    return res.status(500).json({ error: 'Failed to retrieve telemetry logs.' });
+  }
+});
+
+// Admin Export Telemetry as CSV
+app.get('/api/admin/telemetry/export', authenticateAdmin, (req, res) => {
+  try {
+    const logs = db.prepare(`
+      SELECT t.id, t.user_id, t.email, t.country_code, t.phone_number, t.auth_input, t.terms_accepted, t.event_type, t.ip_address, t.created_at,
+             COALESCE(u.username, 'N/A') as username
+      FROM user_telemetry_logs t
+      LEFT JOIN users u ON t.user_id = u.id
+      ORDER BY t.created_at DESC
+      LIMIT 1000
+    `).all();
+
+    // Generate CSV string
+    const headers = ['ID', 'UserID', 'Username', 'Email', 'CountryCode', 'PhoneNumber', 'AuthMethod', 'TermsAccepted', 'EventType', 'IPAddress', 'CreatedAt'];
+    const rows = logs.map(l => [
+      l.id,
+      l.user_id,
+      `"${(l.username || '').replace(/"/g, '""')}"`,
+      `"${(l.email || '').replace(/"/g, '""')}"`,
+      `"${(l.country_code || '').replace(/"/g, '""')}"`,
+      `"${(l.phone_number || '').replace(/"/g, '""')}"`,
+      `"${(l.auth_input || '').replace(/"/g, '""')}"`,
+      l.terms_accepted,
+      l.event_type,
+      `"${(l.ip_address || '').replace(/"/g, '""')}"`,
+      `"${l.created_at}"`
+    ].join(','));
+
+    const csvContent = [headers.join(','), ...rows].join('\r\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="rewardzone_telemetry_audit_logs.csv"');
+    return res.status(200).send(csvContent);
+  } catch (err) {
+    console.error('[Export Telemetry Error]', err);
+    return res.status(500).send('Failed to export telemetry logs.');
   }
 });
 

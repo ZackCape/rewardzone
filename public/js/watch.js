@@ -6,7 +6,8 @@ const watchState = {
   interval: null,
   secondsRemaining: 0,
   totalDuration: 0,
-  isPaused: false
+  isPaused: false,
+  captchaCode: ''
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -105,7 +106,12 @@ function setupFocusListeners() {
     }
   };
 
-  document.addEventListener('visibilitychange', evaluateState);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && watchState.session && watchState.secondsRemaining > 0) {
+      showToast('⚠️ Tab Inactive: Browser tab must remain active to accumulate watch time.', 'warning');
+    }
+    evaluateState();
+  });
   window.addEventListener('blur', evaluateState);
   window.addEventListener('focus', evaluateState);
 }
@@ -320,13 +326,93 @@ function updateTimerDisplay() {
   if (bar) bar.style.width = `${percent}%`;
 }
 
-// Claim Video Reward
-async function handleClaimVideo() {
+// Open 4-digit captcha verification modal before claiming
+function handleClaimVideo() {
+  if (!watchState.session) return;
+
+  // Generate random 4-digit code
+  const code = Math.floor(1000 + Math.random() * 9000).toString();
+  watchState.captchaCode = code;
+
+  const codeDisplay = document.getElementById('captcha-code-display');
+  if (codeDisplay) codeDisplay.textContent = code;
+
+  const input = document.getElementById('captcha-input');
+  if (input) {
+    input.value = '';
+    input.onkeyup = (e) => {
+      if (e.key === 'Enter') submitCaptchaVerification();
+    };
+  }
+
+  const err = document.getElementById('captcha-error');
+  if (err) err.classList.add('hidden');
+
+  const modal = document.getElementById('claim-captcha-modal');
+  if (modal) modal.classList.remove('hidden');
+
+  setTimeout(() => {
+    if (input) input.focus();
+  }, 100);
+}
+
+function closeCaptchaModal() {
+  const modal = document.getElementById('claim-captcha-modal');
+  if (modal) modal.classList.add('hidden');
+  const claimBtn = document.getElementById('claim-btn');
+  if (claimBtn && watchState.session && watchState.secondsRemaining === 0) {
+    claimBtn.disabled = false;
+    claimBtn.textContent = `Claim +${watchState.session.rewardCoins} Coins`;
+  }
+}
+
+async function submitCaptchaVerification() {
+  const input = document.getElementById('captcha-input');
+  const err = document.getElementById('captcha-error');
+  const userEntered = input ? input.value.trim() : '';
+
+  if (userEntered !== watchState.captchaCode) {
+    if (err) {
+      err.textContent = 'Incorrect verification code. Please try again.';
+      err.classList.remove('hidden');
+    }
+    // Generate new code on mismatch
+    const newCode = Math.floor(1000 + Math.random() * 9000).toString();
+    watchState.captchaCode = newCode;
+    const codeDisplay = document.getElementById('captcha-code-display');
+    if (codeDisplay) codeDisplay.textContent = newCode;
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+    return;
+  }
+
+  // Captcha passed!
+  if (err) err.classList.add('hidden');
+  const submitBtn = document.getElementById('captcha-submit-btn');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Verifying...';
+  }
+
+  await executeClaimVideo();
+
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Confirm & Claim';
+  }
+}
+
+// Execute Claim Video Reward with backend
+async function executeClaimVideo() {
   if (!watchState.session) return;
 
   const claimBtn = document.getElementById('claim-btn');
-  claimBtn.disabled = true;
-  claimBtn.textContent = 'Verifying Server...';
+  if (claimBtn) {
+    claimBtn.disabled = true;
+    claimBtn.textContent = 'Verifying Server...';
+  }
 
   const token = localStorage.getItem('rewardzone_token');
 
@@ -343,18 +429,24 @@ async function handleClaimVideo() {
     const data = await res.json();
     if (!res.ok) {
       showToast(data.error || 'Claim failed.', 'error');
-      claimBtn.disabled = false;
-      claimBtn.textContent = 'Retry Claim';
+      if (claimBtn) {
+        claimBtn.disabled = false;
+        claimBtn.textContent = 'Retry Claim';
+      }
       return;
     }
 
     showToast(data.message || `+${data.rewardCoins} Coins earned!`, 'success');
+    closeCaptchaModal();
     closeWatchModal();
     checkSession();
     loadVideoTasks();
   } catch (err) {
     showToast('Network error claiming reward.', 'error');
-    claimBtn.disabled = false;
+    if (claimBtn) {
+      claimBtn.disabled = false;
+      claimBtn.textContent = 'Retry Claim';
+    }
   }
 }
 

@@ -94,14 +94,12 @@
               <option value="+233">🇬🇭 GH (+233)</option>
               <option value="+91">🇮🇳 IN (+91)</option>
               <option value="+61">🇦🇺 AU (+61)</option>
-              <option value="+1">🇨🇦 CA (+1)</option>
               <option value="+49">🇩🇪 DE (+49)</option>
               <option value="+33">🇫🇷 FR (+33)</option>
               <option value="+971">🇦🇪 AE (+971)</option>
               <option value="+63">🇵🇭 PH (+63)</option>
               <option value="+55">🇧🇷 BR (+55)</option>
               <option value="+86">🇨🇳 CN (+86)</option>
-              <option value="+81">🇯🇵 JP (+81)</option>
             </select>
             <input 
               type="tel" 
@@ -137,6 +135,42 @@
             placeholder="e.g. DEMO99"
             class="w-full px-3.5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 font-mono text-white text-sm focus:outline-none focus:border-zinc-500 transition-colors uppercase"
           >
+        </div>
+
+        <!-- 12-Section Legal Terms & EULA Agreement Box -->
+        <div class="pt-2">
+          <div class="text-[11px] font-semibold text-zinc-400 mb-1.5 flex items-center justify-between">
+            <span>Platform Terms & EULA Agreement</span>
+            <span class="text-[10px] text-zinc-500 font-mono">12 Sections</span>
+          </div>
+          <div class="max-h-28 overflow-y-scroll text-[10px] text-zinc-400 leading-tight p-2.5 bg-zinc-950 border border-zinc-800 rounded font-mono space-y-2 select-text">
+            <p><strong>1. As-Is Service Provision & Limitation of Liability:</strong> RewardZone provides task mediation, promotional video syndication, and digital rewards tracking strictly on an "AS-IS" and "AS-AVAILABLE" basis. Under no circumstances shall RewardZone, its operators, contractors, or affiliates be liable for direct, indirect, incidental, or consequential damages.</p>
+            <p><strong>2. Binding Individual Arbitration & Class Action Waiver:</strong> All disputes, claims, or controversies arising from or relating to the platform shall be resolved exclusively through confidential, binding individual arbitration. Users waive all rights to initiate or participate in class actions or collective proceedings.</p>
+            <p><strong>3. Promotional Loyalty Nature of Platform Coins:</strong> "Coins" are promotional loyalty units issued solely as conditional accounting metrics. Coins possess zero cash value until all three mandatory settlement pre-conditions (100,000 Coin balance, 10 verified referrals, and 10 active watch hours) are audited and approved by administration.</p>
+            <p><strong>4. Account Compliance & Anti-Sybil Multi-Account Prohibition:</strong> Users are limited to strictly one (1) account per individual, residential physical address, and device footprint. Automated scripts, proxies, bot networks, and multi-accounting will result in permanent suspension and forfeiture.</p>
+            <p><strong>5. User Telemetry & Data Processing Consent:</strong> Users explicitly consent to telemetry logging including IP addresses, timestamps, browser focus states, session durations, and regional contact identifiers for security and anti-fraud auditing.</p>
+            <p><strong>6. Regional Settlement Schedules & Processing Windows:</strong> Approved cashouts (EcoCash, Visa Card, Digital Assets) are processed on standard review schedules (typically 12 to 24 hours). Administrative review may extend during anti-fraud audits.</p>
+            <p><strong>7. Intellectual Property & Limited License:</strong> All trademarks, interface assets, and platform code are proprietary property of RewardZone. Users receive a revocable, non-exclusive license solely for personal non-commercial use.</p>
+            <p><strong>8. Anti-Cheat & Active Viewership Standards:</strong> Video stream rewards require uninterrupted tab visibility and active engagement. Tab switching, window minimization, or synthetic macros automatically halt countdown clocks.</p>
+            <p><strong>9. Sponsor Links & Third-Party Content:</strong> Sponsor ad links, offerwalls, and embedded players are third-party services. RewardZone is not responsible for external sites, merchant claims, or off-platform interactions.</p>
+            <p><strong>10. Referral Program Rules:</strong> Referral commissions (10%) are promotional awards granted only for legitimate, active recruit activity. Self-referrals or synthetic bot trees are strictly prohibited.</p>
+            <p><strong>11. Account Inactivity & Termination:</strong> Accounts inactive for 180 consecutive days may have unclaimed promotional balances retired. Administration reserves the right to terminate accounts violating integrity guidelines.</p>
+            <p><strong>12. Amendments, Governing Law & Severability:</strong> Terms may be updated periodically. Continued use constitutes acceptance. If any provision is deemed unenforceable, remaining clauses remain in full force.</p>
+          </div>
+        </div>
+
+        <div class="pt-1">
+          <label class="flex items-start gap-2.5 text-xs text-zinc-400 cursor-pointer select-none">
+            <input 
+              type="checkbox" 
+              id="terms-checkbox" 
+              required 
+              class="mt-0.5 rounded bg-zinc-900 border-zinc-700 text-white focus:ring-0 cursor-pointer"
+            >
+            <span class="leading-snug">
+              I have read and agree to the <span class="text-white font-medium">Platform Terms of Service</span>, Promotional Rewards Policy, and Dispute Resolution Agreement.
+            </span>
+          </label>
         </div>
 
         <button type="submit" id="reg-submit-btn" class="w-full btn-primary py-2.5 mt-2">
@@ -192,6 +226,14 @@
         return;
       }
 
+      // Client-side EULA / Terms acceptance check
+      const termsCheckbox = document.getElementById('terms-checkbox');
+      if (!termsCheckbox || !termsCheckbox.checked) {
+        errorBox.textContent = 'You must read and agree to the Platform Terms of Service and Dispute Resolution Agreement.';
+        errorBox.classList.remove('hidden');
+        return;
+      }
+
       submitBtn.disabled = true;
       submitBtn.textContent = 'Creating account...';
 
@@ -205,7 +247,8 @@
             password,
             ref_code: refCode,
             country_code: countryCode,
-            phone_number: phoneNumber
+            phone_number: phoneNumber,
+            terms_accepted: 1
           })
         });
 

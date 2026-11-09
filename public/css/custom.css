@@ -220,6 +220,11 @@ body {
   100% { transform: translateX(-50%); }
 }
 
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
 .ticker-wrap {
   width: 100%;
   overflow: hidden;
@@ -232,7 +237,7 @@ body {
   display: flex;
   gap: 1.5rem;
   width: max-content;
-  animation: tickerScroll 40s linear infinite;
+  animation: marquee 35s linear infinite;
 }
 
 .ticker-track:hover {

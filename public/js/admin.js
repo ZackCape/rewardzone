@@ -43,7 +43,7 @@ async function verifyAdminAccess() {
 function switchAdminTab(tabId) {
   adminState.activeTab = tabId;
 
-  const tabs = ['withdrawals', 'videos', 'users', 'postback'];
+  const tabs = ['withdrawals', 'videos', 'users', 'postback', 'telemetry'];
   tabs.forEach(t => {
     const btn = document.getElementById(`admin-tab-btn-${t}`);
     const sec = document.getElementById(`admin-sec-${t}`);
@@ -60,6 +60,7 @@ function switchAdminTab(tabId) {
   if (tabId === 'withdrawals') loadAdminWithdrawals();
   if (tabId === 'videos') loadAdminVideos();
   if (tabId === 'users') loadAdminUsers();
+  if (tabId === 'telemetry') loadAdminTelemetry();
 }
 
 async function loadAdminStats() {
@@ -432,4 +433,82 @@ async function triggerSimulatedPostback() {
 function handleAdminLogout() {
   localStorage.removeItem('rewardzone_token');
   window.location.href = '/login';
+}
+
+async function loadAdminTelemetry() {
+  const tbody = document.getElementById('admin-telemetry-tbody');
+  if (!tbody) return;
+
+  try {
+    const res = await fetch('/api/admin/telemetry', { headers: getAuthHeaders() });
+    if (!res.ok) {
+      tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-red-400">Failed to load telemetry logs.</td></tr>`;
+      return;
+    }
+    const { logs } = await res.json();
+
+    if (!logs || logs.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-zinc-600">No telemetry logs recorded yet.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = logs.map(l => {
+      let eventBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-900 border border-zinc-700 text-zinc-300">${l.event_type}</span>`;
+      if (l.event_type === 'REGISTER') {
+        eventBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-white text-black">REGISTER</span>`;
+      } else if (l.event_type === 'LOGIN') {
+        eventBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-800 border border-zinc-700 text-white">LOGIN</span>`;
+      }
+
+      return `
+        <tr class="hover:bg-zinc-900/50">
+          <td class="py-2.5 px-3 font-mono text-zinc-500">#${l.id}</td>
+          <td class="py-2.5 px-3">
+            <span class="font-semibold text-white block">${l.username}</span>
+            <span class="text-[11px] font-mono text-zinc-500">${l.email || 'N/A'}</span>
+          </td>
+          <td class="py-2.5 px-3">${eventBadge}</td>
+          <td class="py-2.5 px-3 font-mono text-zinc-300">
+            ${l.country_code || ''} ${l.phone_number || 'N/A'}
+          </td>
+          <td class="py-2.5 px-3 font-mono text-zinc-400 text-[11px]">
+            ${l.auth_input || 'Standard Auth'}
+          </td>
+          <td class="py-2.5 px-3 font-mono text-center">
+            ${l.terms_accepted ? '<span class="text-white font-bold">✓ Accepted</span>' : '<span class="text-zinc-600">No</span>'}
+          </td>
+          <td class="py-2.5 px-3 font-mono text-zinc-500 text-[11px]">${l.ip_address || '127.0.0.1'}</td>
+          <td class="py-2.5 px-3 font-mono text-zinc-500 text-[11px] text-right">${new Date(l.created_at).toLocaleString()}</td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Failed to load telemetry', err);
+    tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-red-400">Failed to load telemetry logs.</td></tr>`;
+  }
+}
+
+async function exportTelemetryCsv() {
+  try {
+    const res = await fetch('/api/admin/telemetry/export', {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+      showToast('Failed to export telemetry CSV.', 'error');
+      return;
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rewardzone_telemetry_${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    showToast('Telemetry CSV exported successfully.', 'success');
+  } catch (err) {
+    console.error('Export error', err);
+    showToast('Failed to download CSV.', 'error');
+  }
 }

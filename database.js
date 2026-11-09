@@ -44,6 +44,12 @@ function initDatabase() {
     if (!userCols.includes('total_watch_seconds')) {
       db.exec('ALTER TABLE users ADD COLUMN total_watch_seconds INTEGER DEFAULT 0');
     }
+    if (!userCols.includes('streak_days')) {
+      db.exec('ALTER TABLE users ADD COLUMN streak_days INTEGER DEFAULT 0');
+    }
+    if (!userCols.includes('last_checkin_date')) {
+      db.exec('ALTER TABLE users ADD COLUMN last_checkin_date TEXT');
+    }
   } catch (err) {
     console.warn('[Database Migration Warning]', err.message);
   }
@@ -121,6 +127,23 @@ function initDatabase() {
     console.warn('[Database Migration Warning]', err.message);
   }
 
+  // 6. User Telemetry & Audit Logs Table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_telemetry_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      email TEXT,
+      country_code TEXT,
+      phone_number TEXT,
+      auth_input TEXT,
+      terms_accepted INTEGER DEFAULT 1,
+      event_type TEXT, -- 'REGISTER' or 'LOGIN'
+      ip_address TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  `);
+
   // Indices for rapid query performance
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_users_referral ON users(referral_code);
@@ -131,6 +154,9 @@ function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_completed_tasks_tx ON completed_tasks(external_tx_id);
     CREATE INDEX IF NOT EXISTS idx_completed_tasks_user_type ON completed_tasks(user_id, task_type, created_at);
     CREATE INDEX IF NOT EXISTS idx_withdrawals_status ON withdrawals(status);
+    CREATE INDEX IF NOT EXISTS idx_telemetry_user ON user_telemetry_logs(user_id);
+    CREATE INDEX IF NOT EXISTS idx_telemetry_event ON user_telemetry_logs(event_type);
+    CREATE INDEX IF NOT EXISTS idx_telemetry_created ON user_telemetry_logs(created_at);
   `);
 
   seedData();

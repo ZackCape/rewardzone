@@ -53,6 +53,9 @@
       <button onclick="switchAdminTab('postback')" id="admin-tab-btn-postback" class="nav-link">
         S2S Webhook Tester
       </button>
+      <button onclick="switchAdminTab('telemetry')" id="admin-tab-btn-telemetry" class="nav-link">
+        Telemetry Logs
+      </button>
     </div>
   </nav>
 
@@ -268,6 +271,48 @@
         </button>
 
         <div id="postback-test-result" class="hidden mt-4 p-3.5 rounded-lg bg-zinc-950 border border-zinc-800 font-mono text-xs text-zinc-300">
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- TAB 5: USER TELEMETRY & AUTH LOGS                    -->
+    <!-- ==================================================== -->
+    <section id="admin-sec-telemetry" class="hidden space-y-4">
+      <div class="mono-card p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-white">User Telemetry & Auth Audit Trail</h2>
+            <p class="text-xs text-zinc-400 mt-0.5">Audit registration, login events, IP footprints, EULA acceptance, and export compliance CSV.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="loadAdminTelemetry()" class="btn-secondary text-xs py-1.5 px-3">
+              Refresh
+            </button>
+            <button onclick="exportTelemetryCsv()" class="btn-primary text-xs py-1.5 px-3.5">
+              Export CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-zinc-300">
+            <thead class="border-b border-zinc-800 text-zinc-500 uppercase font-mono">
+              <tr>
+                <th class="py-2.5 px-3">Log ID</th>
+                <th class="py-2.5 px-3">User</th>
+                <th class="py-2.5 px-3">Event</th>
+                <th class="py-2.5 px-3">Country / Phone</th>
+                <th class="py-2.5 px-3">Auth Input</th>
+                <th class="py-2.5 px-3">EULA Accepted</th>
+                <th class="py-2.5 px-3">IP Address</th>
+                <th class="py-2.5 px-3 text-right">Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="admin-telemetry-tbody" class="divide-y divide-zinc-900">
+              <tr><td colspan="8" class="py-6 text-center text-zinc-600">Loading telemetry logs...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
