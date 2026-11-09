@@ -137,17 +137,10 @@
           >
         </div>
 
-        <div class="pt-2">
-          <label class="flex items-start gap-2.5 text-xs text-zinc-400 cursor-pointer select-none">
-            <input 
-              type="checkbox" 
-              id="terms-checkbox" 
-              required 
-              class="mt-0.5 rounded bg-zinc-900 border-zinc-700 text-white focus:ring-0 cursor-pointer"
-            >
-            <span class="leading-snug">
-              I have read and agree to the <a href="/terms" target="_blank" class="underline text-zinc-200 hover:text-white">Platform Terms of Service</a>, <a href="/terms#rewards" target="_blank" class="underline text-zinc-200 hover:text-white">Promotional Rewards Policy</a>, and <a href="/terms#arbitration" target="_blank" class="underline text-zinc-200 hover:text-white">Dispute Resolution Agreement</a>.
-            </span>
+        <div class="flex items-start gap-2.5 pt-2">
+          <input type="checkbox" id="terms-checkbox" name="terms_accepted" required class="mt-1 rounded bg-zinc-900 border-zinc-700">
+          <label for="terms-checkbox" class="text-xs text-zinc-400 leading-relaxed">
+            I have read and agree to the <a href="/terms" target="_blank" class="text-white font-semibold underline hover:text-zinc-300">Platform Terms of Service</a>, <a href="/terms#rewards" target="_blank" class="underline hover:text-zinc-300">Promotional Rewards Policy</a>, and <a href="/terms#arbitration" target="_blank" class="underline hover:text-zinc-300">Dispute Resolution Agreement</a>.
           </label>
         </div>
 
