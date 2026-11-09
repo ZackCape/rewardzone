@@ -1521,6 +1521,10 @@ app.get('/withdraw', (req, res) => {
   res.sendFile('withdraw.html', { root: publicDir });
 });
 
+app.get('/terms', (req, res) => {
+  res.sendFile('terms.html', { root: publicDir });
+});
+
 // 4. Hidden & Locked Down Admin Route
 // Regular users and visitors are redirected to /login immediately
 app.get('/admin', (req, res) => {

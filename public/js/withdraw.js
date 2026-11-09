@@ -318,7 +318,7 @@ async function loadWithdrawals() {
         statusBadge = `
           <div class="flex flex-col items-end gap-1">
             <span class="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700 text-zinc-300 font-mono text-[10px]">Pending</span>
-            <span class="text-[10px] text-zinc-400 font-mono">Scheduled for 7-Day Batch Processing</span>
+            <span class="text-[10px] text-zinc-400 font-mono">Settlement Status: Scheduled for 7-Day Batch Processing</span>
             <span class="text-[11px] font-mono font-bold text-white batch-countdown-ticker" data-release="${w.scheduled_release_at || ''}">
               Calculating...
             </span>
@@ -370,7 +370,7 @@ function startBatchCountdownTicker() {
     tickers.forEach(el => {
       const releaseStr = el.getAttribute('data-release');
       if (!releaseStr) {
-        el.textContent = 'Scheduled for 7-Day Batch Processing';
+        el.textContent = 'Settlement Status: Scheduled for 7-Day Batch Processing';
         return;
       }
 

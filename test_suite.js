@@ -461,7 +461,7 @@ async function runTests() {
 
     // 11. Multi-Page Application (MPA) Routes & Admin Lockdown
     console.log('1️⃣1️⃣ Testing MPA Routing & Hidden Admin Access Lockdown...');
-    const mpaPages = ['/', '/dashboard', '/login', '/register', '/watch', '/tasks', '/referrals', '/withdraw'];
+    const mpaPages = ['/', '/dashboard', '/login', '/register', '/terms', '/watch', '/tasks', '/referrals', '/withdraw'];
     for (const page of mpaPages) {
       const pageRes = await request('GET', page);
       if (pageRes.status !== 200) {
@@ -472,6 +472,13 @@ async function runTests() {
         throw new Error(`Security breach: "Admin Dashboard" is exposed in public page ${page}!`);
       }
     }
+
+    // Verify dedicated /terms legal page content
+    const termsRes = await request('GET', '/terms');
+    if (termsRes.status !== 200 || typeof termsRes.body !== 'string' || !termsRes.body.includes('Platform Terms of Service') || !termsRes.body.includes('id="rewards"') || !termsRes.body.includes('id="arbitration"')) {
+      throw new Error(`GET /terms verification failed! Expected 25-section legal document.`);
+    }
+    console.log('   📜 Dedicated /terms legal page verified: HTTP 200 with dense 25-section legal agreement.');
     console.log(`   ✅ All ${mpaPages.length} MPA pages served with clean URLs. Zero exposed admin buttons.`);
 
     // Verify unauthenticated /admin redirects to /login
