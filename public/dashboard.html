@@ -28,6 +28,26 @@
     </div>
   </header>
 
+  <!-- ======================================================== -->
+  <!-- LIVE PAYOUT TICKER BAR                                   -->
+  <!-- ======================================================== -->
+  <div class="border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-sm py-2 px-4 sm:px-6">
+    <div class="max-w-6xl mx-auto flex items-center gap-3 text-xs overflow-hidden">
+      <!-- Live Badge -->
+      <div class="flex items-center gap-1.5 shrink-0 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-300">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="font-bold text-white uppercase tracking-wider text-[10px]">Live Payouts</span>
+      </div>
+      
+      <!-- Scrolling Marquee Track -->
+      <div class="ticker-wrap flex-1">
+        <div id="payout-ticker-track" class="ticker-track">
+          <span class="text-zinc-500 font-mono text-xs">Loading verified platform payouts...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Dashboard Container -->
   <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
     
@@ -150,5 +170,82 @@
 
   <script src="/js/common.js"></script>
   <script src="/js/dashboard.js"></script>
+
+  <!-- Settlement Proof Receipt Modal -->
+  <div id="receipt-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="mono-card max-w-md w-full p-6 sm:p-7 space-y-5 border border-zinc-700 bg-zinc-950 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+      
+      <!-- Modal Header -->
+      <div class="flex items-start justify-between border-b border-zinc-800/80 pb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-950 border border-emerald-800/80 flex items-center justify-center text-emerald-400 text-sm font-bold">
+            ✓
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Settlement Proof Receipt</h3>
+            <p class="text-[11px] font-mono text-zinc-400">Verified Platform Payout & Escrow Disbursement</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeReceiptModal()" class="text-zinc-400 hover:text-white p-1 text-xl leading-none">
+          &times;
+        </button>
+      </div>
+
+      <!-- Receipt Content Grid -->
+      <div class="space-y-3 font-mono text-xs">
+        <div class="flex items-center justify-between p-2.5 rounded-lg bg-zinc-900 border border-zinc-800/80">
+          <span class="text-zinc-400">Reference ID:</span>
+          <span id="receipt-ref-id" class="text-white font-bold tracking-wider">EC-ZW-948201</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800/80">
+            <span class="text-[11px] text-zinc-500 block">Recipient</span>
+            <span id="receipt-user" class="text-white font-semibold flex items-center gap-1.5 mt-0.5">
+              <span>🇿🇼</span> <span>Tin***</span>
+            </span>
+          </div>
+          <div class="p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800/80">
+            <span class="text-[11px] text-zinc-500 block">Amount Settled</span>
+            <span id="receipt-amount" class="text-emerald-400 font-bold mt-0.5 block">$100.00 USD</span>
+          </div>
+        </div>
+
+        <div class="p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800/80 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-400">Payout Network:</span>
+            <span id="receipt-network" class="text-white font-semibold">EcoCash Mobile Money</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-400">Channel:</span>
+            <span id="receipt-method" class="text-zinc-300">ECOCASH</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-400">Settled At:</span>
+            <span id="receipt-timestamp" class="text-zinc-300">2m ago</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-400">Audit Status:</span>
+            <span class="text-emerald-400 font-bold inline-flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              Cleared & Disbursed
+            </span>
+          </div>
+        </div>
+
+        <div class="p-2.5 rounded-lg bg-zinc-900/40 border border-zinc-800 text-[10px] text-zinc-500 leading-relaxed">
+          🔒 <strong>Audit Record:</strong> This transaction was processed via RewardZone 7-Day Batch Escrow in accordance with § 7 of the Platform Terms of Service. Funds cleared anti-fraud and active-tab telemetry verification prior to dispatch.
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="pt-2 flex items-center justify-end gap-2 border-t border-zinc-900">
+        <button type="button" onclick="closeReceiptModal()" class="btn-primary text-xs py-2 px-5 w-full">
+          Close Receipt
+        </button>
+      </div>
+
+    </div>
+  </div>
 </body>
 </html>

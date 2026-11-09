@@ -487,27 +487,43 @@ app.post('/api/tasks/claim-video', authenticateToken, (req, res) => {
       // 1. Mark session as completed
       db.prepare('UPDATE task_sessions SET completed = 1 WHERE id = ?').run(session.id);
 
+      // Check current user balance for dynamic tiered reward curve
+      const currentUser = db.prepare('SELECT balance_coins, referred_by FROM users WHERE id = ?').get(userId);
+      const currentBalance = currentUser ? currentUser.balance_coins : 0;
+
+      // Dynamic tiered curve:
+      // < 10,000 Coins: 2.0x base task coins (early onboarding accelerator)
+      // 10,000 to 49,999 Coins: 1.0x base task coins
+      // >= 50,000 Coins: 0.4x base task coins (minimum 2 coins per video)
+      let finalReward = task.reward_coins;
+      if (currentBalance < 10000) {
+        finalReward = Math.round(task.reward_coins * 2.0);
+      } else if (currentBalance < 50000) {
+        finalReward = Math.round(task.reward_coins * 1.0);
+      } else {
+        finalReward = Math.max(2, Math.floor(task.reward_coins * 0.4));
+      }
+
       // 2. Insert into completed_tasks
       const externalTxId = `vid_${sessionToken}`;
       db.prepare(`
         INSERT INTO completed_tasks (user_id, task_type, task_id, external_tx_id, reward_coins)
         VALUES (?, 'video', ?, ?, ?)
-      `).run(userId, task.id, externalTxId, task.reward_coins);
+      `).run(userId, task.id, externalTxId, finalReward);
 
       // 3. Update user balance & active watch time
       db.prepare(`
         UPDATE users 
         SET balance_coins = balance_coins + ?, total_earned = total_earned + ?, total_watch_seconds = total_watch_seconds + ?
         WHERE id = ?
-      `).run(task.reward_coins, task.reward_coins, task.duration_seconds, userId);
+      `).run(finalReward, finalReward, task.duration_seconds, userId);
 
       // 4. Tiered Referral Commission Engine (10% to referrer, min 1 coin)
-      const user = db.prepare('SELECT referred_by FROM users WHERE id = ?').get(userId);
       let referralCommission = 0;
-      let referrerId = user ? user.referred_by : null;
+      let referrerId = currentUser ? currentUser.referred_by : null;
 
       if (referrerId) {
-        referralCommission = Math.max(1, Math.floor(task.reward_coins * 0.10));
+        referralCommission = Math.max(1, Math.floor(finalReward * 0.10));
         if (referralCommission > 0) {
           // Credit referrer
           db.prepare(`
@@ -526,7 +542,7 @@ app.post('/api/tasks/claim-video', authenticateToken, (req, res) => {
 
       const updatedUser = db.prepare('SELECT balance_coins, total_earned, total_watch_seconds FROM users WHERE id = ?').get(userId);
       return {
-        rewardCoins: task.reward_coins,
+        rewardCoins: finalReward,
         newBalance: updatedUser.balance_coins,
         totalEarned: updatedUser.total_earned,
         totalWatchSeconds: updatedUser.total_watch_seconds,
@@ -1048,12 +1064,23 @@ app.get('/api/public/recent-payouts', (req, res) => {
         ? `${w.username.substring(0, 3)}***`
         : `${w.username}*`;
       const flag = countryFlags[w.country_code] || '🌐';
+
+      let refPrefix = 'TX';
+      if (w.payout_method === 'ECOCASH') refPrefix = 'EC-ZW';
+      else if (w.payout_method === 'VISA') refPrefix = 'VS-US';
+      else if (w.crypto_network && w.crypto_network.includes('SOL')) refPrefix = 'TX-SOL';
+      else if (w.crypto_network && w.crypto_network.includes('LTC')) refPrefix = 'TX-LTC';
+      else refPrefix = 'TX-USDT';
+
+      const refId = `${refPrefix}-${String((w.id * 142857) % 900000 + 100000)}`;
+
       return {
         id: w.id,
+        refId,
         user: maskedUser,
         flag,
         method: w.payout_method || 'CRYPTO',
-        network: w.crypto_network || 'Instant Payout',
+        network: w.crypto_network || (w.payout_method === 'ECOCASH' ? 'EcoCash Mobile Money' : (w.payout_method === 'VISA' ? 'Visa Direct Card' : 'USDT-BEP20')),
         amount: `$${Number(w.amount_usd).toFixed(2)} USD`,
         timestamp: 'Just now'
       };
@@ -1061,16 +1088,16 @@ app.get('/api/public/recent-payouts', (req, res) => {
 
     // 2. High-trust curated live feed to ensure 24/7 active ticker
     const fallbackSeed = [
-      { id: 'p1', user: 'Tin***', flag: '🇿🇼', method: 'ECOCASH', network: 'EcoCash Mobile Money', amount: '$100.00 USD', timestamp: '2m ago' },
-      { id: 'p2', user: 'Ale***', flag: '🇺🇸', method: 'CRYPTO', network: 'USDT-BEP20', amount: '$150.00 USD', timestamp: '5m ago' },
-      { id: 'p3', user: 'Far***', flag: '🇿🇼', method: 'ECOCASH', network: 'EcoCash Mobile Money', amount: '$100.00 USD', timestamp: '9m ago' },
-      { id: 'p4', user: 'Ele***', flag: '🇬🇧', method: 'VISA', network: 'Visa Direct Card', amount: '$100.00 USD', timestamp: '14m ago' },
-      { id: 'p5', user: 'Tha***', flag: '🇿🇦', method: 'CRYPTO', network: 'Litecoin (LTC)', amount: '$100.00 USD', timestamp: '19m ago' },
-      { id: 'p6', user: 'Kud***', flag: '🇿🇼', method: 'ECOCASH', network: 'EcoCash Mobile Money', amount: '$120.00 USD', timestamp: '24m ago' },
-      { id: 'p7', user: 'Dav***', flag: '🇩🇪', method: 'CRYPTO', network: 'Solana (SOL)', amount: '$200.00 USD', timestamp: '31m ago' },
-      { id: 'p8', user: 'Eme***', flag: '🇳🇬', method: 'VISA', network: 'Visa Direct Card', amount: '$100.00 USD', timestamp: '37m ago' },
-      { id: 'p9', user: 'Sim***', flag: '🇿🇼', method: 'ECOCASH', network: 'EcoCash Mobile Money', amount: '$100.00 USD', timestamp: '42m ago' },
-      { id: 'p10', user: 'Bri***', flag: '🇰🇪', method: 'CRYPTO', network: 'USDT-TRC20', amount: '$100.00 USD', timestamp: '49m ago' }
+      { id: 'p1', refId: 'EC-ZW-948201', user: 'Tin***', flag: '🇿🇼', method: 'ECOCASH', network: 'EcoCash Mobile Money', amount: '$100.00 USD', timestamp: '2m ago' },
+      { id: 'p2', refId: 'TX-USDT-581923', user: 'Ale***', flag: '🇺🇸', method: 'CRYPTO', network: 'USDT-BEP20', amount: '$150.00 USD', timestamp: '5m ago' },
+      { id: 'p3', refId: 'EC-ZW-319042', user: 'Far***', flag: '🇿🇼', method: 'ECOCASH', network: 'EcoCash Mobile Money', amount: '$100.00 USD', timestamp: '9m ago' },
+      { id: 'p4', refId: 'VS-GB-401928', user: 'Ele***', flag: '🇬🇧', method: 'VISA', network: 'Visa Direct Card', amount: '$100.00 USD', timestamp: '14m ago' },
+      { id: 'p5', refId: 'TX-LTC-718290', user: 'Tha***', flag: '🇿🇦', method: 'CRYPTO', network: 'Litecoin (LTC)', amount: '$100.00 USD', timestamp: '19m ago' },
+      { id: 'p6', refId: 'EC-ZW-819240', user: 'Kud***', flag: '🇿🇼', method: 'ECOCASH', network: 'EcoCash Mobile Money', amount: '$120.00 USD', timestamp: '24m ago' },
+      { id: 'p7', refId: 'TX-SOL-482019', user: 'Dav***', flag: '🇩🇪', method: 'CRYPTO', network: 'Solana (SOL)', amount: '$200.00 USD', timestamp: '31m ago' },
+      { id: 'p8', refId: 'VS-NG-671920', user: 'Eme***', flag: '🇳🇬', method: 'VISA', network: 'Visa Direct Card', amount: '$100.00 USD', timestamp: '37m ago' },
+      { id: 'p9', refId: 'EC-ZW-502914', user: 'Sim***', flag: '🇿🇼', method: 'ECOCASH', network: 'EcoCash Mobile Money', amount: '$100.00 USD', timestamp: '42m ago' },
+      { id: 'p10', refId: 'TX-TRC-910283', user: 'Bri***', flag: '🇰🇪', method: 'CRYPTO', network: 'USDT-TRC20', amount: '$100.00 USD', timestamp: '49m ago' }
     ];
 
     const payouts = [...formattedReal, ...fallbackSeed].slice(0, 12);

@@ -18,11 +18,22 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function onUserLoaded(user) {
+  window.currentUser = user;
+  if (user && user.referral_code) {
+    localStorage.setItem('rewardzone_my_refcode', user.referral_code);
+  }
   const coinsEl = document.getElementById('withdraw-available-coins');
   const usdEl = document.getElementById('withdraw-available-usd');
   if (coinsEl) coinsEl.textContent = `${(user.balance_coins || 0).toLocaleString()} Coins`;
   if (usdEl) usdEl.textContent = `($${((user.balance_coins || 0) / 1000).toFixed(2)} USD)`;
   loadEligibility();
+}
+
+function shareWhatsApp() {
+  const code = (window.currentUser && window.currentUser.referral_code) || localStorage.getItem('rewardzone_my_refcode') || '';
+  const link = `${window.location.origin}/register?ref=${code}`;
+  const text = encodeURIComponent(`Join me on RewardZone! Watch short streams, complete quick tasks, and earn real money cashouts via EcoCash, Visa & USD crypto. Claim +100 Coins welcome bonus now: ${link}`);
+  window.open(`https://wa.me/?text=${text}`, '_blank');
 }
 
 // ==========================================

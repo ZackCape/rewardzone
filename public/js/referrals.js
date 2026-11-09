@@ -118,9 +118,14 @@ function copyRefLink() {
 }
 
 function shareWhatsApp() {
-  const link = document.getElementById('ref-link-input').value;
-  const text = encodeURIComponent(`Join me on RewardZone! Watch short streams, complete tasks, and earn real money with direct EcoCash, Visa & crypto cashouts: ${link}`);
-  window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+  const input = document.getElementById('ref-link-input');
+  let link = input ? input.value : '';
+  if (!link || link.includes('...')) {
+    const code = (window.currentUser && window.currentUser.referral_code) || localStorage.getItem('rewardzone_my_refcode') || '';
+    link = `${window.location.origin}/register?ref=${code}`;
+  }
+  const text = encodeURIComponent(`Join me on RewardZone! Watch short streams, complete quick tasks, and earn real money cashouts via EcoCash, Visa & USD crypto. Claim +100 Coins welcome bonus now: ${link}`);
+  window.open(`https://wa.me/?text=${text}`, '_blank');
 }
 
 function shareX() {

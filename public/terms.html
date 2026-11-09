@@ -19,7 +19,7 @@
         <span class="text-base font-bold tracking-tight text-white">REWARDZONE</span>
       </a>
       <div class="flex items-center gap-4 text-xs font-mono">
-        <span class="text-zinc-500 hidden sm:inline">LEGAL DOC ID: RZ-TOS-REV2026.11</span>
+        <span class="text-zinc-400 hidden sm:inline px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 font-semibold">Document Ref: RZ-LEGAL-2026-V4</span>
         <a href="/register" class="btn-secondary py-1.5 px-3">&larr; Return to Registration</a>
       </div>
     </div>
@@ -27,18 +27,23 @@
 
   <!-- Document Meta Hero -->
   <section class="border-b border-zinc-900 bg-zinc-950/60 py-10 px-4 sm:px-6">
-    <div class="max-w-5xl mx-auto space-y-3">
-      <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400">
-        <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
-        Binding Master Service Agreement, EULA & Arbitration Covenant
+    <div class="max-w-7xl mx-auto space-y-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-300">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          Document Ref: RZ-LEGAL-2026-V4
+        </div>
+        <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400">
+          Binding Master Service Agreement, EULA & Arbitration Covenant
+        </div>
       </div>
       <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-white">
-        Platform Terms of Service & Legal Agreement
+        Platform Terms of Service & Enterprise Legal Portal
       </h1>
-      <p class="text-xs text-zinc-400 font-mono max-w-3xl leading-relaxed">
-        Effective Date: November 9, 2026 &bull; Version 4.8.0-PROD &bull; Standard Commercial Terms Governing All Platform Participation, Video Stream Syndication, Promotional Token Accounting, and Regional Batch Settlement Protocols.
+      <p class="text-xs text-zinc-400 font-mono max-w-4xl leading-relaxed">
+        Effective Date: November 9, 2026 &bull; Document Ref: RZ-LEGAL-2026-V4 &bull; Version 4.8.0-PROD &bull; Standard Commercial Terms Governing All Platform Participation, Video Stream Syndication, Promotional Token Accounting, and Regional Batch Settlement Protocols.
       </p>
-      <div class="pt-2 flex flex-wrap gap-2 text-[11px] font-mono">
+      <div class="pt-2 flex flex-wrap gap-2 text-[11px] font-mono lg:hidden">
         <a href="#preamble" class="px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-300 hover:border-zinc-600">§ 1. Assent & Estoppel</a>
         <a href="#disclaimer" class="px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-300 hover:border-zinc-600">§ 2. As-Is Provision</a>
         <a href="#liability" class="px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-300 hover:border-zinc-600">§ 3. Limitation of Liability</a>
@@ -50,8 +55,47 @@
     </div>
   </section>
 
-  <!-- Legal Body Container -->
-  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-10 space-y-8">
+  <!-- Legal Body Container with Sticky Sidebar Table of Contents -->
+  <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-10 lg:grid lg:grid-cols-4 gap-8">
+    
+    <!-- Sticky Sidebar Table of Contents -->
+    <aside class="hidden lg:block lg:col-span-1">
+      <div class="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-3 space-y-1 font-mono text-xs">
+        <div class="p-3 rounded-lg bg-zinc-950 border border-zinc-800 mb-3">
+          <div class="text-[11px] font-bold text-white uppercase tracking-wider">Document Index</div>
+          <div class="text-[10px] text-zinc-500 mt-0.5">Ref: RZ-LEGAL-2026-V4</div>
+        </div>
+        <nav class="space-y-1 text-zinc-400">
+          <a href="#preamble" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 1. Assent & Estoppel</a>
+          <a href="#disclaimer" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 2. As-Is Provision</a>
+          <a href="#liability" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 3. Limitation of Liability</a>
+          <a href="#arbitration" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate text-zinc-200 font-semibold">§ 4. Binding Arbitration</a>
+          <a href="#rewards" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate text-zinc-200 font-semibold">§ 5. Promotional Loyalty</a>
+          <a href="#audit" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 6. Audit & Forfeiture</a>
+          <a href="#batching" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 7. 7-Day Escrow</a>
+          <a href="#telemetry" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 8. Telemetry Logging</a>
+          <a href="#sybil" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 9. Sybil Anti-Cheat</a>
+          <a href="#gates" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 10. Cashout Gates</a>
+          <a href="#watch" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 11. Active Watch Engine</a>
+          <a href="#cpa" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 12. S2S Postbacks</a>
+          <a href="#ambassador" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 13. Referral System</a>
+          <a href="#ip" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 14. Intellectual Property</a>
+          <a href="#esign" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 15. Electronic Signature</a>
+          <a href="#credentials" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 16. Credentials Security</a>
+          <a href="#dormancy" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 17. Account Dormancy</a>
+          <a href="#sponsors" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 18. Third-Party Sponsors</a>
+          <a href="#aml" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 19. AML & Sanctions</a>
+          <a href="#security" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 20. Security Prohibitions</a>
+          <a href="#severability" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 21. Severability Clause</a>
+          <a href="#governing-law" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 22. Governing Law</a>
+          <a href="#statute-limitations" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 23. Limitation Period</a>
+          <a href="#force-majeure" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 24. Force Majeure</a>
+          <a href="#amendments" class="block px-2.5 py-1.5 rounded hover:bg-zinc-900 hover:text-white transition-colors truncate">§ 25. Unilateral Updates</a>
+        </nav>
+      </div>
+    </aside>
+
+    <main class="lg:col-span-3 space-y-8">
 
     <div class="p-4 rounded-lg bg-zinc-950 border border-zinc-800/80 text-[11px] font-mono text-zinc-400 leading-relaxed">
       <strong class="text-white uppercase tracking-wider block mb-1">CRITICAL LEGAL NOTICE TO ALL USERS:</strong>
@@ -407,6 +451,7 @@
     </div>
 
   </main>
+  </div>
 
   <!-- Footer -->
   <footer class="border-t border-zinc-900 py-6 text-xs text-zinc-500 mt-auto font-mono">

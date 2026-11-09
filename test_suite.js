@@ -234,7 +234,8 @@ async function runTests() {
       throw new Error(`Referral commission mismatch. Expected +${expectedCommission}, got +${actualIncrease}`);
     }
 
-    // Verify 10% commission on 5-coin video task awards minimum 1 coin (Math.max(1, floor(5 * 0.10)))
+    // Verify Dynamic Tiered Coin Earning Curve (<10k = 2.0x, 10k-50k = 1.0x, >=50k = 0.4x)
+    // Tier 1: User balance is currently ~6,105 (<10,000 Coins), awards 2.0x base reward (5 base -> 10 coins)
     const preVideoReferrerCoins = referrerCheckRes.body.user.balance_coins;
     const testSessionToken = `tok_test_ref_${Date.now()}`;
     db.prepare(`
@@ -242,21 +243,56 @@ async function runTests() {
       VALUES (?, ?, ?, ?, 0)
     `).run(newUserId, sampleTask.id, testSessionToken, Math.floor(Date.now() / 1000) - sampleTask.duration_seconds - 5);
 
-    const claim5Res = await request('POST', '/api/tasks/claim-video', { sessionToken: testSessionToken }, {
+    const claimTier1Res = await request('POST', '/api/tasks/claim-video', { sessionToken: testSessionToken }, {
       'Authorization': `Bearer ${userToken}`
     });
-    if (claim5Res.status !== 200 || claim5Res.body.rewardCoins !== 5) {
-      throw new Error(`Claiming 5-coin video failed: ${JSON.stringify(claim5Res.body)}`);
+    if (claimTier1Res.status !== 200 || claimTier1Res.body.rewardCoins !== 10) {
+      throw new Error(`Dynamic Tier 1 reward failed! Expected 10 coins (2.0x multiplier on 5 base), got: ${JSON.stringify(claimTier1Res.body)}`);
     }
+    console.log(`   🚀 DYNAMIC TIER 1 VERIFIED (<10,000 Coins): Base 5 awarded 2.0x = ${claimTier1Res.body.rewardCoins} Coins.`);
+
+    // 10% referral commission on 10 coins = 1 coin (Math.max(1, floor(10 * 0.10)))
     const postVideoReferrerRes = await request('GET', '/api/auth/me', null, {
       'Authorization': `Bearer ${demoLoginRes.body.token}`
     });
-    const refCommissionOn5 = postVideoReferrerRes.body.user.balance_coins - preVideoReferrerCoins;
-    if (refCommissionOn5 === 1) {
-      console.log(`   🎉 MINIMUM 1-COIN COMMISSION VERIFIED: Referrer earned +1 Coin (Math.max(1, 0)) on 5-coin video stream!`);
+    const refCommissionOnTier1 = postVideoReferrerRes.body.user.balance_coins - preVideoReferrerCoins;
+    if (refCommissionOnTier1 === 1) {
+      console.log(`   🎉 10% REFERRAL COMMISSION VERIFIED: Referrer earned +1 Coin on 10-coin reward!`);
     } else {
-      throw new Error(`Expected +1 referral commission on 5-coin video, got +${refCommissionOn5}`);
+      throw new Error(`Expected +1 referral commission on Tier 1 video, got +${refCommissionOnTier1}`);
     }
+
+    // Tier 2: Balance 10,000 to 49,999 Coins -> 1.0x base reward (5 base -> 5 coins)
+    db.prepare('DELETE FROM completed_tasks WHERE user_id = ? AND task_id = ?').run(newUserId, sampleTask.id);
+    db.prepare('UPDATE users SET balance_coins = 25000 WHERE id = ?').run(newUserId);
+    const testSessionToken2 = `tok_test_tier2_${Date.now()}`;
+    db.prepare(`
+      INSERT INTO task_sessions (user_id, task_id, session_token, start_time, completed)
+      VALUES (?, ?, ?, ?, 0)
+    `).run(newUserId, sampleTask.id, testSessionToken2, Math.floor(Date.now() / 1000) - sampleTask.duration_seconds - 5);
+    const claimTier2Res = await request('POST', '/api/tasks/claim-video', { sessionToken: testSessionToken2 }, {
+      'Authorization': `Bearer ${userToken}`
+    });
+    if (claimTier2Res.status !== 200 || claimTier2Res.body.rewardCoins !== 5) {
+      throw new Error(`Dynamic Tier 2 reward failed! Expected 5 coins (1.0x on 5 base), got: ${JSON.stringify(claimTier2Res.body)}`);
+    }
+    console.log(`   🚀 DYNAMIC TIER 2 VERIFIED (10k-50k Coins): Base 5 awarded 1.0x = ${claimTier2Res.body.rewardCoins} Coins.`);
+
+    // Tier 3: Balance >= 50,000 Coins -> 0.4x base reward (minimum 2 coins per video: Math.max(2, floor(5 * 0.4)) = 2)
+    db.prepare('DELETE FROM completed_tasks WHERE user_id = ? AND task_id = ?').run(newUserId, sampleTask.id);
+    db.prepare('UPDATE users SET balance_coins = 60000 WHERE id = ?').run(newUserId);
+    const testSessionToken3 = `tok_test_tier3_${Date.now()}`;
+    db.prepare(`
+      INSERT INTO task_sessions (user_id, task_id, session_token, start_time, completed)
+      VALUES (?, ?, ?, ?, 0)
+    `).run(newUserId, sampleTask.id, testSessionToken3, Math.floor(Date.now() / 1000) - sampleTask.duration_seconds - 5);
+    const claimTier3Res = await request('POST', '/api/tasks/claim-video', { sessionToken: testSessionToken3 }, {
+      'Authorization': `Bearer ${userToken}`
+    });
+    if (claimTier3Res.status !== 200 || claimTier3Res.body.rewardCoins !== 2) {
+      throw new Error(`Dynamic Tier 3 reward failed! Expected 2 coins (0.4x min 2 on 5 base), got: ${JSON.stringify(claimTier3Res.body)}`);
+    }
+    console.log(`   🚀 DYNAMIC TIER 3 VERIFIED (>=50,000 Coins): Base 5 awarded 0.4x = ${claimTier3Res.body.rewardCoins} Coins (min 2 applied).`);
 
     // Test Referral Leaderboard
     const leaderboardRes = await request('GET', '/api/referrals/leaderboard');
@@ -432,12 +468,12 @@ async function runTests() {
     }
     console.log(`   ✅ Admin rejected Crypto payout #${cryptoWithdrawalId} and automatically refunded 100,000 Coins to user balance.`);
 
-    // Test Public Live Payouts Ticker Feed
+    // Test Public Live Payouts Ticker Feed & Masked Reference IDs
     const tickerRes = await request('GET', '/api/public/recent-payouts');
-    if (tickerRes.status !== 200 || !tickerRes.body.payouts || !tickerRes.body.payouts.length) {
-      throw new Error(`Live payout ticker failed: ${JSON.stringify(tickerRes.body)}`);
+    if (tickerRes.status !== 200 || !tickerRes.body.payouts || !tickerRes.body.payouts.length || !tickerRes.body.payouts[0].refId) {
+      throw new Error(`Live payout ticker failed or missing refId: ${JSON.stringify(tickerRes.body)}`);
     }
-    console.log(`   ✅ Live Payout Ticker feed verified: ${tickerRes.body.payouts.length} verified platform cashouts loaded.`);
+    console.log(`   ✅ Live Payout Ticker feed verified: ${tickerRes.body.payouts.length} verified platform cashouts loaded with reference IDs (Sample: ${tickerRes.body.payouts[0].refId}).`);
 
     // Test Admin Telemetry & Registration Audit Logs
     const telemetryRes = await request('GET', '/api/admin/telemetry', null, {
@@ -473,12 +509,23 @@ async function runTests() {
       }
     }
 
-    // Verify dedicated /terms legal page content
+    // Verify dedicated /terms legal page content & Document Ref RZ-LEGAL-2026-V4
     const termsRes = await request('GET', '/terms');
-    if (termsRes.status !== 200 || typeof termsRes.body !== 'string' || !termsRes.body.includes('Platform Terms of Service') || !termsRes.body.includes('id="rewards"') || !termsRes.body.includes('id="arbitration"')) {
-      throw new Error(`GET /terms verification failed! Expected 25-section legal document.`);
+    if (termsRes.status !== 200 || typeof termsRes.body !== 'string' || !termsRes.body.includes('Platform Terms of Service') || !termsRes.body.includes('id="rewards"') || !termsRes.body.includes('id="arbitration"') || !termsRes.body.includes('RZ-LEGAL-2026-V4')) {
+      throw new Error(`GET /terms verification failed! Expected 25-section legal document with Document Ref RZ-LEGAL-2026-V4.`);
     }
-    console.log('   📜 Dedicated /terms legal page verified: HTTP 200 with dense 25-section legal agreement.');
+    console.log('   📜 Dedicated /terms legal page verified: HTTP 200 with Document Ref RZ-LEGAL-2026-V4 and dense 25-section legal agreement.');
+
+    // Verify OpenGraph meta tags on index and register pages
+    const homeRes = await request('GET', '/');
+    if (!homeRes.body.includes('og:title') || !homeRes.body.includes('Earn Real Money') || !homeRes.body.includes('EcoCash, Visa & USD Rewards')) {
+      throw new Error('OpenGraph tags or Real Money messaging missing on home page /');
+    }
+    const regPageRes = await request('GET', '/register');
+    if (!regPageRes.body.includes('og:title') || !regPageRes.body.includes('Earn Real Money')) {
+      throw new Error('OpenGraph tags missing on /register page');
+    }
+    console.log('   🌐 OpenGraph meta tags verified across public landing and registration pages.');
     console.log(`   ✅ All ${mpaPages.length} MPA pages served with clean URLs. Zero exposed admin buttons.`);
 
     // Verify unauthenticated /admin redirects to /login

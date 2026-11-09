@@ -2,13 +2,72 @@
 // Standard Daily Bonus Reward: +5 Coins
 
 let streakTimerInterval = null;
+let currentPayoutsList = [];
 
 document.addEventListener('DOMContentLoaded', () => {
   // Check session via common.js
   if (typeof checkSession === 'function') {
     checkSession();
   }
+  loadRecentPayouts();
+  setInterval(loadRecentPayouts, 60000);
 });
+
+// Load Live Recent Payouts Ticker
+async function loadRecentPayouts() {
+  try {
+    const res = await fetch('/api/public/recent-payouts');
+    const data = await res.json();
+    const track = document.getElementById('payout-ticker-track');
+    if (!track || !data.payouts || !data.payouts.length) return;
+    currentPayoutsList = data.payouts;
+
+    const renderItem = (p, idx) => `
+      <div onclick="openReceiptModal(${idx % data.payouts.length})" class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-zinc-900/60 hover:bg-zinc-800/90 border border-zinc-800/80 hover:border-zinc-500 text-xs font-mono shrink-0 cursor-pointer transition-all duration-150" title="Click to view verified settlement receipt">
+        <span>${p.flag || '🌐'}</span>
+        <span class="font-semibold text-white">${p.user}</span>
+        <span class="text-zinc-500">&bull;</span>
+        <span class="text-emerald-400 font-bold">${p.amount}</span>
+        <span class="text-zinc-400">via</span>
+        <span class="px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 text-[10px]">${p.network || p.method}</span>
+        <span class="text-zinc-500 text-[11px]">${p.timestamp}</span>
+        <span class="text-[10px] text-zinc-400 underline ml-1">Receipt &rarr;</span>
+      </div>
+    `;
+
+    // Duplicate array so marquee scrolls continuously without seams
+    const duplicated = [...data.payouts, ...data.payouts];
+    track.innerHTML = duplicated.map((p, idx) => renderItem(p, idx)).join('');
+  } catch (err) {
+    console.error('Failed to load recent payouts ticker', err);
+  }
+}
+
+function openReceiptModal(idx) {
+  const p = currentPayoutsList[idx];
+  if (!p) return;
+  const refIdEl = document.getElementById('receipt-ref-id');
+  const userEl = document.getElementById('receipt-user');
+  const amountEl = document.getElementById('receipt-amount');
+  const networkEl = document.getElementById('receipt-network');
+  const methodEl = document.getElementById('receipt-method');
+  const timeEl = document.getElementById('receipt-timestamp');
+
+  if (refIdEl) refIdEl.textContent = p.refId || `TX-${p.id}`;
+  if (userEl) userEl.innerHTML = `<span>${p.flag || '🌐'}</span> <span>${p.user}</span>`;
+  if (amountEl) amountEl.textContent = p.amount;
+  if (networkEl) networkEl.textContent = p.network || p.method;
+  if (methodEl) methodEl.textContent = p.method;
+  if (timeEl) timeEl.textContent = p.timestamp;
+
+  const modal = document.getElementById('receipt-modal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeReceiptModal() {
+  const modal = document.getElementById('receipt-modal');
+  if (modal) modal.classList.add('hidden');
+}
 
 function onUserLoaded(user) {
   const userEl = document.getElementById('dash-username');
