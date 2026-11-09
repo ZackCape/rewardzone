@@ -29,7 +29,7 @@ async function loadDailyStatus() {
     if (data.canClaim) {
       if (claimBtn) {
         claimBtn.disabled = false;
-        claimBtn.textContent = 'Claim +25 Coins';
+        claimBtn.textContent = 'Claim +5 Coins';
       }
       if (cooldownText) cooldownText.classList.add('hidden');
     } else {
@@ -93,11 +93,11 @@ async function claimDailyBonus() {
     if (!res.ok) {
       showToast(data.error || 'Failed to claim bonus.', 'error');
       claimBtn.disabled = false;
-      claimBtn.textContent = 'Claim +25 Coins';
+      claimBtn.textContent = 'Claim +5 Coins';
       return;
     }
 
-    showToast(data.message || '+25 Coins added!', 'success');
+    showToast(data.message || '+5 Coins added!', 'success');
     checkSession();
     loadDailyStatus();
   } catch (err) {

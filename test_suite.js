@@ -125,7 +125,7 @@ async function runTests() {
     console.log(`   ✅ Welcome Bonus: ${regRes.body.user.balance_coins} Coins awarded.\n`);
 
     // 4. Video Tasks List
-    console.log('4️⃣ Testing Video Tasks List...');
+    console.log('4️⃣ Testing Video Tasks List & Calibrated Coin Rewards (5–15 Coins)...');
     const videosRes = await request('GET', '/api/tasks/videos', null, {
       'Authorization': `Bearer ${userToken}`
     });
@@ -133,7 +133,19 @@ async function runTests() {
       throw new Error(`Failed to list video tasks: ${JSON.stringify(videosRes.body)}`);
     }
     const sampleTask = videosRes.body.tasks[0];
-    console.log(`   ✅ Retrieved ${videosRes.body.tasks.length} video tasks. First task: "${sampleTask.title}" (${sampleTask.duration_seconds}s, +${sampleTask.reward_coins} Coins)\n`);
+    // Verify calibrated reward amounts: 30s-45s = 5 coins, 60s = 10 coins, 90s+ = 15 coins
+    for (const t of videosRes.body.tasks) {
+      if (t.duration_seconds <= 45 && t.reward_coins !== 5) {
+        throw new Error(`Task #${t.id} (${t.duration_seconds}s) expected 5 coins, got ${t.reward_coins}`);
+      }
+      if (t.duration_seconds > 45 && t.duration_seconds <= 60 && t.reward_coins !== 10) {
+        throw new Error(`Task #${t.id} (${t.duration_seconds}s) expected 10 coins, got ${t.reward_coins}`);
+      }
+      if (t.duration_seconds > 60 && t.reward_coins !== 15) {
+        throw new Error(`Task #${t.id} (${t.duration_seconds}s) expected 15 coins, got ${t.reward_coins}`);
+      }
+    }
+    console.log(`   ✅ Retrieved ${videosRes.body.tasks.length} video tasks with calibrated rewards (5, 10, 15 coins). Sample task: "${sampleTask.title}" (${sampleTask.duration_seconds}s, +${sampleTask.reward_coins} Coins)\n`);
 
     // 5. Anti-Cheat Video Watch Verification (Premature Claim Rejection)
     console.log('5️⃣ Testing Anti-Cheat Video Session & Premature Claim Detection...');
@@ -157,21 +169,24 @@ async function runTests() {
     }
 
     // 6. Daily Checkin & Cooldown
-    console.log('6️⃣ Testing Daily Bonus (+25 Coins), 7-Day Consistency Streak & Cooldown...');
+    console.log('6️⃣ Testing Reduced Daily Bonus (+5 Coins), 7-Day Consistency Streak & Cooldown...');
     const dailyRes = await request('POST', '/api/tasks/daily-checkin', {}, {
       'Authorization': `Bearer ${userToken}`
     });
-    if (dailyRes.status !== 200 || dailyRes.body.rewardCoins !== 25) {
-      throw new Error(`Daily bonus failed: ${JSON.stringify(dailyRes.body)}`);
+    if (dailyRes.status !== 200 || dailyRes.body.rewardCoins !== 5) {
+      throw new Error(`Daily bonus failed! Expected +5 Coins, got: ${JSON.stringify(dailyRes.body)}`);
     }
-    console.log(`   ✅ Daily bonus claimed: +25 Coins. New balance: ${dailyRes.body.newBalance}`);
+    console.log(`   ✅ Daily bonus claimed: +5 Coins. New balance: ${dailyRes.body.newBalance}`);
 
     // Verify 7-Day Consistency Streak Status
     const streakStatusRes = await request('GET', '/api/tasks/daily-status', null, {
       'Authorization': `Bearer ${userToken}`
     });
     if (streakStatusRes.status === 200 && streakStatusRes.body.streakList && streakStatusRes.body.streakList.length === 7) {
-      console.log(`   🔥 7-DAY STREAK VERIFIED: Current streak is Day ${streakStatusRes.body.streakDays} with 7-day progression list.`);
+      if (streakStatusRes.body.rewardCoins !== 5) {
+        throw new Error(`Streak status expected rewardCoins: 5, got ${streakStatusRes.body.rewardCoins}`);
+      }
+      console.log(`   🔥 7-DAY STREAK VERIFIED: Current streak is Day ${streakStatusRes.body.streakDays} with +5 Coins daily reward.`);
     } else {
       throw new Error(`Daily streak status failed: ${JSON.stringify(streakStatusRes.body)}`);
     }
@@ -217,6 +232,30 @@ async function runTests() {
       console.log(`   🎉 TIERED COMMISSION ENGINE VERIFIED: Referrer (demouser) received exactly +${actualIncrease} Coins (10% of 6,000)!`);
     } else {
       throw new Error(`Referral commission mismatch. Expected +${expectedCommission}, got +${actualIncrease}`);
+    }
+
+    // Verify 10% commission on 5-coin video task awards minimum 1 coin (Math.max(1, floor(5 * 0.10)))
+    const preVideoReferrerCoins = referrerCheckRes.body.user.balance_coins;
+    const testSessionToken = `tok_test_ref_${Date.now()}`;
+    db.prepare(`
+      INSERT INTO task_sessions (user_id, task_id, session_token, start_time, completed)
+      VALUES (?, ?, ?, ?, 0)
+    `).run(newUserId, sampleTask.id, testSessionToken, Math.floor(Date.now() / 1000) - sampleTask.duration_seconds - 5);
+
+    const claim5Res = await request('POST', '/api/tasks/claim-video', { sessionToken: testSessionToken }, {
+      'Authorization': `Bearer ${userToken}`
+    });
+    if (claim5Res.status !== 200 || claim5Res.body.rewardCoins !== 5) {
+      throw new Error(`Claiming 5-coin video failed: ${JSON.stringify(claim5Res.body)}`);
+    }
+    const postVideoReferrerRes = await request('GET', '/api/auth/me', null, {
+      'Authorization': `Bearer ${demoLoginRes.body.token}`
+    });
+    const refCommissionOn5 = postVideoReferrerRes.body.user.balance_coins - preVideoReferrerCoins;
+    if (refCommissionOn5 === 1) {
+      console.log(`   🎉 MINIMUM 1-COIN COMMISSION VERIFIED: Referrer earned +1 Coin (Math.max(1, 0)) on 5-coin video stream!`);
+    } else {
+      throw new Error(`Expected +1 referral commission on 5-coin video, got +${refCommissionOn5}`);
     }
 
     // Test Referral Leaderboard
@@ -351,14 +390,19 @@ async function runTests() {
     const visaWithdrawalId = visaCashoutRes.body.withdrawalId;
     console.log(`   ✅ Method 3 (Visa Card) Payout #${visaWithdrawalId} submitted: $100.00 USD to Visa card.`);
 
-    // Verify User Withdrawal History
+    // Verify User Withdrawal History & 7-Day Batch Settlement Timestamp
     const myWithdrawalsRes = await request('GET', '/api/withdrawals/my', null, {
       'Authorization': `Bearer ${userToken}`
     });
     if (myWithdrawalsRes.status !== 200 || myWithdrawalsRes.body.withdrawals.length < 3) {
       throw new Error(`My withdrawals history incomplete: ${JSON.stringify(myWithdrawalsRes.body)}`);
     }
-    console.log(`   ✅ Cashout history verified: All 3 payout requests logged in user profile.\n`);
+    const sampleWithdrawal = myWithdrawalsRes.body.withdrawals[0];
+    if (!sampleWithdrawal.scheduled_release_at) {
+      throw new Error(`Withdrawal #${sampleWithdrawal.id} missing scheduled_release_at batch timestamp!`);
+    }
+    console.log(`   ⏳ 7-DAY BATCH SETTLEMENT VERIFIED: Withdrawal #${sampleWithdrawal.id} scheduled for release at: ${sampleWithdrawal.scheduled_release_at}`);
+    console.log(`   ✅ Cashout history verified: All 3 payout requests logged in user profile with batch release timestamps.\n`);
 
     // 10. Admin Dashboard Operations & Review
     console.log('🔟 Testing Admin Queue & Approval/Refund of New Payout Methods...');
@@ -417,7 +461,7 @@ async function runTests() {
 
     // 11. Multi-Page Application (MPA) Routes & Admin Lockdown
     console.log('1️⃣1️⃣ Testing MPA Routing & Hidden Admin Access Lockdown...');
-    const mpaPages = ['/', '/login', '/register', '/watch', '/tasks', '/referrals', '/withdraw'];
+    const mpaPages = ['/', '/dashboard', '/login', '/register', '/watch', '/tasks', '/referrals', '/withdraw'];
     for (const page of mpaPages) {
       const pageRes = await request('GET', page);
       if (pageRes.status !== 200) {
@@ -428,7 +472,7 @@ async function runTests() {
         throw new Error(`Security breach: "Admin Dashboard" is exposed in public page ${page}!`);
       }
     }
-    console.log('   ✅ All 7 MPA pages served with clean URLs. Zero exposed admin buttons.');
+    console.log(`   ✅ All ${mpaPages.length} MPA pages served with clean URLs. Zero exposed admin buttons.`);
 
     // Verify unauthenticated /admin redirects to /login
     const unauthAdminRes = await request('GET', '/admin');

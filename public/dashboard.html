@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard & Streak Tracker - RewardZone</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/custom.css">
+</head>
+<body class="bg-black text-zinc-100 min-h-screen flex flex-col font-sans antialiased selection:bg-white selection:text-black">
+
+  <!-- Header -->
+  <header class="border-b border-zinc-900 bg-black/80 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center font-bold text-white text-xs">
+          RZ
+        </div>
+        <span class="text-base font-bold tracking-tight text-white">REWARDZONE</span>
+      </a>
+      <nav class="flex items-center gap-4 text-xs">
+        <a href="/" class="text-zinc-400 hover:text-white transition-colors">Overview</a>
+        <a href="/watch" class="text-zinc-400 hover:text-white transition-colors">Watch & Earn</a>
+        <a href="/tasks" class="text-zinc-400 hover:text-white transition-colors">Tasks</a>
+        <a href="/referrals" class="text-zinc-400 hover:text-white transition-colors">Referrals</a>
+        <a href="/withdraw" class="text-zinc-400 hover:text-white transition-colors">Cashout</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Dashboard Container -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
+    
+    <!-- User Summary Banner -->
+    <div class="mono-card p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div>
+        <span class="text-xs font-mono text-zinc-500 uppercase tracking-wider">Account Dashboard</span>
+        <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">
+          Welcome back, <span id="dash-username" class="text-zinc-200">user</span>
+        </h2>
+        <p class="text-xs text-zinc-400 mt-1">
+          Points valuation: 1,000 Coins = $1.00 USD. Zero withdrawal deductions.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="/watch" class="btn-primary text-xs py-2 px-4">Watch Streams</a>
+        <a href="/withdraw" class="btn-secondary text-xs py-2 px-4">Cashout</a>
+      </div>
+    </div>
+
+    <!-- KPI Metrics Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="mono-card p-5">
+        <span class="text-xs font-semibold text-zinc-400 block mb-1">Coin Balance</span>
+        <div id="dash-balance-coins" class="text-2xl font-black font-mono-num text-white">0</div>
+        <span id="dash-balance-usd" class="text-xs text-zinc-500 font-mono-num mt-1 block">$0.00 USD</span>
+      </div>
+
+      <div class="mono-card p-5">
+        <span class="text-xs font-semibold text-zinc-400 block mb-1">Total Earned</span>
+        <div id="dash-total-earned" class="text-2xl font-black font-mono-num text-white">0</div>
+        <span class="text-xs text-zinc-500 font-mono-num mt-1 block">All-time coins</span>
+      </div>
+
+      <div class="mono-card p-5">
+        <span class="text-xs font-semibold text-zinc-400 block mb-1">Total Referrals</span>
+        <div id="dash-referrals-count" class="text-2xl font-black font-mono-num text-white">0</div>
+        <span id="dash-referral-earnings" class="text-xs text-zinc-500 font-mono-num mt-1 block">0 commission coins</span>
+      </div>
+
+      <div class="mono-card p-5">
+        <span class="text-xs font-semibold text-zinc-400 block mb-1">Completed Tasks</span>
+        <div id="dash-tasks-count" class="text-2xl font-black font-mono-num text-white">0</div>
+        <span class="text-xs text-zinc-500 font-mono-num mt-1 block">Streams & offers</span>
+      </div>
+    </div>
+
+    <!-- 7-Day Consistency Streak Tracker Card -->
+    <section class="mono-card p-6 sm:p-8 space-y-5">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-300 mb-2">
+            <span>🔥</span> <span id="streak-counter-badge">0 Day Streak</span>
+          </div>
+          <h3 class="text-xl font-bold text-white tracking-tight">7-Day Consistency Login Streak</h3>
+          <p class="text-xs text-zinc-400 mt-1">Check in once every 24 hours to maintain your streak and earn +5 bonus coins every day.</p>
+        </div>
+        <div id="streak-action-box" class="flex flex-col sm:items-end gap-2 w-full sm:w-auto">
+          <button id="streak-claim-btn" onclick="claimDailyStreak()" class="btn-primary text-xs py-2 px-5 w-full sm:w-auto">
+            Claim Today's +5 Coins
+          </button>
+          <div id="streak-cooldown-text" class="hidden text-[11px] font-mono text-zinc-400">
+            Next check-in: <span id="streak-cooldown-timer" class="text-white font-semibold">--:--:--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7-Day Grid -->
+      <div id="streak-days-grid" class="grid grid-cols-7 gap-2 sm:gap-3 pt-2">
+        <!-- Dynamically populated by loadStreakStatus() with +5 Coins badges -->
+      </div>
+    </section>
+
+    <!-- Quick Navigation Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <a href="/watch" class="mono-card mono-card-interactive p-6 flex flex-col justify-between group">
+        <div>
+          <span class="text-xs font-mono text-zinc-500 uppercase tracking-wider block mb-1">Stream Portal</span>
+          <h3 class="text-lg font-bold text-white group-hover:text-zinc-200">Watch & Earn</h3>
+          <p class="text-xs text-zinc-400 mt-2">
+            Browse short educational video streams (5–15 Coins). Active tab anti-cheat verification.
+          </p>
+        </div>
+        <span class="text-xs font-medium text-white mt-4 inline-flex items-center gap-1">Open Streams &rarr;</span>
+      </a>
+
+      <a href="/tasks" class="mono-card mono-card-interactive p-6 flex flex-col justify-between group">
+        <div>
+          <span class="text-xs font-mono text-zinc-500 uppercase tracking-wider block mb-1">Loyalty & CPA</span>
+          <h3 class="text-lg font-bold text-white group-hover:text-zinc-200">Tasks & Daily Bonus</h3>
+          <p class="text-xs text-zinc-400 mt-2">
+            Claim your +5 Daily Coins every 24 hours, or complete partner CPA offers and surveys.
+          </p>
+        </div>
+        <span class="text-xs font-medium text-white mt-4 inline-flex items-center gap-1">View Tasks &rarr;</span>
+      </a>
+
+      <a href="/referrals" class="mono-card mono-card-interactive p-6 flex flex-col justify-between group">
+        <div>
+          <span class="text-xs font-mono text-zinc-500 uppercase tracking-wider block mb-1">Partner Network</span>
+          <h3 class="text-lg font-bold text-white group-hover:text-zinc-200">Referral Hub</h3>
+          <p class="text-xs text-zinc-400 mt-2">
+            Invite partners with your personal link. Earn 10% commission on every stream & task completed.
+          </p>
+        </div>
+        <span class="text-xs font-medium text-white mt-4 inline-flex items-center gap-1">Manage Network &rarr;</span>
+      </a>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-zinc-900 py-6 text-xs text-zinc-500 mt-auto">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>&copy; 2026 RewardZone. 1,000 Coins = $1.00 USD.</div>
+      <div class="text-zinc-400">7-Day Consistency Streak & Daily Bonus (+5 Coins)</div>
+    </div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

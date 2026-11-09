@@ -501,13 +501,13 @@ app.post('/api/tasks/claim-video', authenticateToken, (req, res) => {
         WHERE id = ?
       `).run(task.reward_coins, task.reward_coins, task.duration_seconds, userId);
 
-      // 4. Tiered Referral Commission Engine (10% to referrer)
+      // 4. Tiered Referral Commission Engine (10% to referrer, min 1 coin)
       const user = db.prepare('SELECT referred_by FROM users WHERE id = ?').get(userId);
       let referralCommission = 0;
       let referrerId = user ? user.referred_by : null;
 
       if (referrerId) {
-        referralCommission = Math.floor(task.reward_coins * 0.10);
+        referralCommission = Math.max(1, Math.floor(task.reward_coins * 0.10));
         if (referralCommission > 0) {
           // Credit referrer
           db.prepare(`
@@ -562,7 +562,7 @@ app.get('/api/tasks/daily-status', authenticateToken, (req, res) => {
       ORDER BY created_at DESC LIMIT 1
     `).get(userId);
 
-    const DAILY_REWARD = 25; // Standard 25 coins
+    const DAILY_REWARD = 5; // Standard 5 coins per day
     const secondsRemaining = lastCheckin ? Math.max(0, 86400 - lastCheckin.seconds_since) : 0;
     const canClaim = !lastCheckin || secondsRemaining === 0;
 
@@ -598,7 +598,7 @@ app.get('/api/tasks/daily-status', authenticateToken, (req, res) => {
 app.post('/api/tasks/daily-checkin', authenticateToken, (req, res) => {
   try {
     const userId = req.user.id;
-    const DAILY_REWARD = 25;
+    const DAILY_REWARD = 5; // Standard 5 coins per day
 
     const user = db.prepare('SELECT streak_days FROM users WHERE id = ?').get(userId);
     const lastCheckin = db.prepare(`
@@ -655,13 +655,14 @@ app.post('/api/tasks/daily-checkin', authenticateToken, (req, res) => {
 // 4. CPA OFFERWALL & S2S POSTBACK WEBHOOK
 // ==========================================
 
-// Universal S2S Postback Endpoint: GET /api/postback?userid={subid}&payout={payout}&txid={tx_id}&sig={signature}
-app.get('/api/postback', (req, res) => {
+// Universal S2S Postback Handler: supports GET/POST /api/postback and /api/webhooks/postback
+const handlePostback = (req, res) => {
   try {
-    const { userid, payout, txid, sig } = req.query;
+    const params = { ...req.query, ...(req.body || {}) };
+    const { userid, payout, txid, sig } = params;
 
     if (!userid || !payout || !txid) {
-      console.warn('[POSTBACK WARN] Missing query parameters:', req.query);
+      console.warn('[POSTBACK WARN] Missing query parameters:', params);
       return res.status(400).send('ERROR_MISSING_PARAMS');
     }
 
@@ -705,7 +706,7 @@ app.get('/api/postback', (req, res) => {
       return res.status(400).send('INVALID_PAYOUT_AMOUNT');
     }
 
-    // Credit user & 10% referral commission inside transaction
+    // Credit user & 10% referral commission inside transaction (min 1 coin)
     runTransaction(() => {
       // 1. Log completed task
       db.prepare(`
@@ -720,9 +721,9 @@ app.get('/api/postback', (req, res) => {
         WHERE id = ?
       `).run(rewardCoins, rewardCoins, user.id);
 
-      // 3. Referral Commission Engine (10%)
+      // 3. Referral Commission Engine (10%, min 1 coin)
       if (user.referred_by) {
-        const commission = Math.floor(rewardCoins * 0.10);
+        const commission = Math.max(1, Math.floor(rewardCoins * 0.10));
         if (commission > 0) {
           db.prepare(`
             UPDATE users 
@@ -745,7 +746,12 @@ app.get('/api/postback', (req, res) => {
     console.error('[Postback Error]', err);
     return res.status(500).send('INTERNAL_ERROR');
   }
-});
+};
+
+app.get('/api/postback', handlePostback);
+app.post('/api/postback', handlePostback);
+app.get('/api/webhooks/postback', handlePostback);
+app.post('/api/webhooks/postback', handlePostback);
 
 // Helper for testing Postback URL generation
 app.get('/api/postback/generate-test-url', authenticateToken, (req, res) => {
@@ -953,10 +959,10 @@ app.post('/api/withdrawals/request', authenticateToken, (req, res) => {
       // 1. Deduct coins from user balance immediately
       db.prepare('UPDATE users SET balance_coins = balance_coins - ? WHERE id = ?').run(coins, userId);
 
-      // 2. Insert into withdrawals table with pending status
+      // 2. Insert into withdrawals table with pending status & 7-day batch settlement schedule
       const insert = db.prepare(`
-        INSERT INTO withdrawals (user_id, amount_coins, amount_usd, payout_method, crypto_network, wallet_address, account_details, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+        INSERT INTO withdrawals (user_id, amount_coins, amount_usd, payout_method, crypto_network, wallet_address, account_details, status, scheduled_release_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', datetime('now', '+7 days'))
       `).run(
         userId,
         coins,
@@ -971,12 +977,14 @@ app.post('/api/withdrawals/request', authenticateToken, (req, res) => {
     });
 
     const updatedUser = db.prepare('SELECT balance_coins FROM users WHERE id = ?').get(userId);
+    const createdWithdrawal = db.prepare('SELECT scheduled_release_at FROM withdrawals WHERE id = ?').get(withdrawalId);
 
     return res.status(201).json({
       success: true,
-      message: `Withdrawal request for $${amountUsd} USD via ${networkOrProvider} submitted successfully! It will be reviewed by admin within 24 hours.`,
+      message: `Withdrawal request for $${amountUsd} USD via ${networkOrProvider} submitted successfully! Scheduled for 7-Day Batch Processing.`,
       withdrawalId,
       payoutMethod: normalizedMethod,
+      scheduledReleaseAt: createdWithdrawal ? createdWithdrawal.scheduled_release_at : null,
       newBalance: updatedUser.balance_coins
     });
   } catch (err) {
@@ -990,7 +998,7 @@ app.get('/api/withdrawals/my', authenticateToken, (req, res) => {
   try {
     const userId = req.user.id;
     const history = db.prepare(`
-      SELECT id, amount_coins, amount_usd, payout_method, crypto_network, wallet_address, account_details, status, created_at
+      SELECT id, amount_coins, amount_usd, payout_method, crypto_network, wallet_address, account_details, status, scheduled_release_at, created_at
       FROM withdrawals
       WHERE user_id = ?
       ORDER BY created_at DESC
@@ -1226,7 +1234,7 @@ app.get('/api/admin/stats', authenticateAdmin, (req, res) => {
 app.get('/api/admin/withdrawals', authenticateAdmin, (req, res) => {
   try {
     const withdrawals = db.prepare(`
-      SELECT w.id, w.user_id, w.amount_coins, w.amount_usd, w.payout_method, w.crypto_network, w.wallet_address, w.account_details, w.status, w.created_at,
+      SELECT w.id, w.user_id, w.amount_coins, w.amount_usd, w.payout_method, w.crypto_network, w.wallet_address, w.account_details, w.status, w.scheduled_release_at, w.created_at,
              u.username, u.email, u.ip_address, u.country_code, u.phone_number, u.total_watch_seconds, u.balance_coins as current_balance, u.total_earned, u.created_at as user_created_at
       FROM withdrawals w
       JOIN users u ON w.user_id = u.id
@@ -1346,15 +1354,21 @@ app.post('/api/admin/videos', authenticateAdmin, (req, res) => {
   try {
     const { title, youtube_embed_url, duration_seconds, reward_coins, ad_direct_link } = req.body;
 
-    if (!title || !youtube_embed_url || !duration_seconds || !reward_coins) {
-      return res.status(400).json({ error: 'Title, YouTube embed URL, duration, and reward coins are required.' });
+    if (!title || !youtube_embed_url || !duration_seconds) {
+      return res.status(400).json({ error: 'Title, YouTube embed URL, and duration are required.' });
     }
 
     const duration = parseInt(duration_seconds, 10);
-    const reward = parseInt(reward_coins, 10);
+    let reward = reward_coins ? parseInt(reward_coins, 10) : 0;
 
-    if (duration < 5 || reward < 1) {
-      return res.status(400).json({ error: 'Duration must be at least 5 seconds and reward at least 1 coin.' });
+    if (isNaN(reward) || reward < 1) {
+      if (duration <= 45) reward = 5;
+      else if (duration <= 60) reward = 10;
+      else reward = 15;
+    }
+
+    if (duration < 5) {
+      return res.status(400).json({ error: 'Duration must be at least 5 seconds.' });
     }
 
     // Clean YouTube URL if full watch URL provided
@@ -1477,7 +1491,7 @@ app.get('/api/admin/telemetry/export', authenticateAdmin, (req, res) => {
 const publicDir = path.join(__dirname, 'public');
 
 // 1. Landing & Dashboard
-app.get('/', (req, res) => {
+app.get(['/', '/dashboard'], (req, res) => {
   res.sendFile('index.html', { root: publicDir });
 });
 

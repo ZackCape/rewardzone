@@ -311,10 +311,20 @@ async function loadWithdrawals() {
     }
 
     tbody.innerHTML = data.withdrawals.map(w => {
+      const normStatus = (w.status || '').toLowerCase();
       let statusBadge = '';
-      if (w.status === 'pending') {
-        statusBadge = '<span class="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700 text-zinc-300 font-mono text-[10px]">Pending</span>';
-      } else if (w.status === 'approved') {
+
+      if (normStatus === 'pending' || normStatus === 'pending_review') {
+        statusBadge = `
+          <div class="flex flex-col items-end gap-1">
+            <span class="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700 text-zinc-300 font-mono text-[10px]">Pending</span>
+            <span class="text-[10px] text-zinc-400 font-mono">Scheduled for 7-Day Batch Processing</span>
+            <span class="text-[11px] font-mono font-bold text-white batch-countdown-ticker" data-release="${w.scheduled_release_at || ''}">
+              Calculating...
+            </span>
+          </div>
+        `;
+      } else if (normStatus === 'approved') {
         statusBadge = '<span class="px-2 py-0.5 rounded bg-white text-black font-mono font-bold text-[10px]">Paid</span>';
       } else {
         statusBadge = '<span class="px-2 py-0.5 rounded bg-zinc-900 border border-red-900 text-red-400 font-mono text-[10px]">Refunded</span>';
@@ -342,7 +352,52 @@ async function loadWithdrawals() {
         </tr>
       `;
     }).join('');
+
+    startBatchCountdownTicker();
   } catch (err) {
     console.error('Failed to load withdrawals', err);
   }
+}
+
+// Live ticking countdown for 7-day batch settlement release
+let batchTickerInterval = null;
+
+function startBatchCountdownTicker() {
+  if (batchTickerInterval) clearInterval(batchTickerInterval);
+
+  const updateTickers = () => {
+    const tickers = document.querySelectorAll('.batch-countdown-ticker[data-release]');
+    tickers.forEach(el => {
+      const releaseStr = el.getAttribute('data-release');
+      if (!releaseStr) {
+        el.textContent = 'Scheduled for 7-Day Batch Processing';
+        return;
+      }
+
+      let targetTime;
+      if (releaseStr.includes('T')) {
+        targetTime = new Date(releaseStr).getTime();
+      } else {
+        targetTime = new Date(releaseStr.replace(' ', 'T') + 'Z').getTime();
+      }
+
+      const diff = targetTime - Date.now();
+
+      if (isNaN(diff) || diff <= 0) {
+        el.textContent = 'Batch Settlement Ready';
+        el.className = 'text-[11px] font-mono font-bold text-emerald-400 batch-countdown-ticker';
+      } else {
+        const totalSecs = Math.floor(diff / 1000);
+        const days = Math.floor(totalSecs / 86400);
+        const hours = Math.floor((totalSecs % 86400) / 3600);
+        const minutes = Math.floor((totalSecs % 3600) / 60);
+        const seconds = totalSecs % 60;
+
+        el.textContent = `${days}d : ${String(hours).padStart(2, '0')}h : ${String(minutes).padStart(2, '0')}m : ${String(seconds).padStart(2, '0')}s`;
+      }
+    });
+  };
+
+  updateTickers();
+  batchTickerInterval = setInterval(updateTickers, 1000);
 }

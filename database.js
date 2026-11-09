@@ -97,7 +97,7 @@ function initDatabase() {
     );
   `);
 
-  // 5. Withdrawals Table (Supports Crypto, EcoCash, Visa Card)
+  // 5. Withdrawals Table (Supports Crypto, EcoCash, Visa Card & 7-Day Batch Processing)
   db.exec(`
     CREATE TABLE IF NOT EXISTS withdrawals (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -109,6 +109,7 @@ function initDatabase() {
       wallet_address TEXT NOT NULL,
       account_details TEXT,
       status TEXT DEFAULT 'pending',
+      scheduled_release_at DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
@@ -123,6 +124,21 @@ function initDatabase() {
     if (!wCols.includes('account_details')) {
       db.exec('ALTER TABLE withdrawals ADD COLUMN account_details TEXT');
     }
+    if (!wCols.includes('scheduled_release_at')) {
+      db.exec('ALTER TABLE withdrawals ADD COLUMN scheduled_release_at DATETIME');
+      db.exec("UPDATE withdrawals SET scheduled_release_at = datetime(created_at, '+7 days') WHERE scheduled_release_at IS NULL");
+    }
+  } catch (err) {
+    console.warn('[Database Migration Warning]', err.message);
+  }
+
+  // Auto-update video task rewards on startup so existing tasks award smaller coin amounts
+  try {
+    db.exec(`
+      UPDATE video_tasks SET reward_coins = 5 WHERE duration_seconds <= 45;
+      UPDATE video_tasks SET reward_coins = 10 WHERE duration_seconds > 45 AND duration_seconds <= 60;
+      UPDATE video_tasks SET reward_coins = 15 WHERE duration_seconds > 60;
+    `);
   } catch (err) {
     console.warn('[Database Migration Warning]', err.message);
   }
@@ -185,29 +201,36 @@ function seedData() {
         title: 'Bitcoin Fundamentals: How Decentralized Money Works',
         url: 'https://www.youtube.com/embed/bBC-nXj3Ng4',
         duration: 30,
-        reward: 50,
+        reward: 5,
         adLink: 'https://example.com/sponsor/crypto-exchange'
       },
       {
         title: 'Ethereum & Smart Contracts: The World Computer Explained',
         url: 'https://www.youtube.com/embed/ZE2HxTmxfrI',
         duration: 45,
-        reward: 80,
+        reward: 5,
         adLink: 'https://example.com/sponsor/web3-wallet'
       },
       {
         title: 'Crypto Security 101: Hardware Wallets & Phishing Defense',
         url: 'https://www.youtube.com/embed/1YyAzVmP9xQ',
         duration: 60,
-        reward: 120,
+        reward: 10,
         adLink: 'https://example.com/sponsor/vpn-deal'
       },
       {
         title: 'DeFi Mastery: Liquidity Pools & Automated Market Makers',
         url: 'https://www.youtube.com/embed/17QRFlml4pA',
         duration: 30,
-        reward: 60,
+        reward: 5,
         adLink: 'https://example.com/sponsor/defi-aggregator'
+      },
+      {
+        title: 'Layer-2 Rollups: Scaling Transactions for Global Adoption',
+        url: 'https://www.youtube.com/embed/1YyAzVmP9xQ',
+        duration: 90,
+        reward: 15,
+        adLink: 'https://example.com/sponsor/layer2-bridge'
       }
     ];
 

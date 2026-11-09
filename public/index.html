@@ -233,11 +233,11 @@
               <span>🔥</span> <span id="streak-counter-badge">0 Day Streak</span>
             </div>
             <h3 class="text-xl font-bold text-white tracking-tight">7-Day Consistency Login Streak</h3>
-            <p class="text-xs text-zinc-400 mt-1">Check in once every 24 hours to maintain your streak and earn +25 bonus coins every day.</p>
+            <p class="text-xs text-zinc-400 mt-1">Check in once every 24 hours to maintain your streak and earn +5 bonus coins every day.</p>
           </div>
           <div id="streak-action-box" class="flex flex-col sm:items-end gap-2 w-full sm:w-auto">
             <button id="streak-claim-btn" onclick="claimDailyStreak()" class="btn-primary text-xs py-2 px-5 w-full sm:w-auto">
-              Claim Today's +25 Coins
+              Claim Today's +5 Coins
             </button>
             <div id="streak-cooldown-text" class="hidden text-[11px] font-mono text-zinc-400">
               Next check-in: <span id="streak-cooldown-timer" class="text-white font-semibold">--:--:--</span>
@@ -271,7 +271,7 @@
             <span class="text-xs font-mono text-zinc-500 uppercase tracking-wider block mb-1">Loyalty & CPA</span>
             <h3 class="text-lg font-bold text-white group-hover:text-zinc-200">Tasks & Daily Bonus</h3>
             <p class="text-xs text-zinc-400 mt-2">
-              Claim your +25 Daily Coins every 24 hours, or complete high-payout CPA offers and surveys.
+              Claim your +5 Daily Coins every 24 hours, or complete high-payout CPA offers and surveys.
             </p>
           </div>
           <span class="text-xs font-medium text-white mt-4 inline-flex items-center gap-1">
@@ -427,7 +427,7 @@
           if (claimBtn) {
             claimBtn.disabled = false;
             claimBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            claimBtn.textContent = "Claim Today's +25 Coins";
+            claimBtn.textContent = "Claim Today's +5 Coins";
           }
           if (cooldownText) cooldownText.classList.add('hidden');
         } else {
@@ -510,7 +510,7 @@
           showToast(data.error || 'Failed to claim daily bonus.', 'error');
           if (btn) {
             btn.disabled = false;
-            btn.textContent = "Claim Today's +25 Coins";
+            btn.textContent = "Claim Today's +5 Coins";
           }
           return;
         }
@@ -523,7 +523,7 @@
         showToast('Network error claiming bonus.', 'error');
         if (btn) {
           btn.disabled = false;
-          btn.textContent = "Claim Today's +25 Coins";
+          btn.textContent = "Claim Today's +5 Coins";
         }
       }
     }
